@@ -1,0 +1,25 @@
+# Секреты и локальные настройки
+.env
+.env.*
+!.env.example
+
+# База данных и бэкапы
+bot_database.db
+*.db
+*.db.bak
+*.db.bak_*
+bot_database.db.bak_*
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Временные/генерируемые файлы
+stats_temp.png
+push_error.txt
+
+# Редактор
+.vscode/
