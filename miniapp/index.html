@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0d0f16">
+  <meta name="theme-color" content="#0a1020">
   <title>UA. Mini App</title>
-  <link rel="stylesheet" href="style.css?v=20261125s">
+  <link rel="stylesheet" href="style.css?v=20261125t">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -20,12 +20,14 @@
     <section class="tab active" id="tab-home">
       <div class="card season-card">
         <div class="season-top">
-          <div class="season-name" id="home-season-name">Игрок · сезон 1</div>
+          <div class="season-copy">
+            <div class="season-name" id="home-season-name">Игрок · сезон 1</div>
+            <div class="season-progress">
+              <span id="season-today">Сегодня 0 из 3</span>
+              <span id="season-exp">до 1-го — 60 опыта</span>
+            </div>
+          </div>
           <div class="season-chip" id="season-level">Уровень 0</div>
-        </div>
-        <div class="season-progress">
-          <span id="season-today">Сегодня 0 из 3</span>
-          <span id="season-exp">до 1-го — 60 опыта</span>
         </div>
         <div class="progress"><div class="progress-fill" id="season-progress-fill"></div></div>
       </div>
@@ -40,22 +42,25 @@
           <button class="menu-tile tile-cases" data-go="cases">
             <span class="tile-icon">📦</span>
             <span class="tile-body">
-              <span class="tile-title">Кейсы</span>
-              <span class="tile-sub">Открывай кейсы<br>3 кейса от 2,5⭐<br>главный приз 500⭐</span>
+              <span class="tile-label">Кейсы</span>
+              <span class="tile-headline">Открывай<br>кейсы</span>
+              <span class="tile-sub">3 кейса от 2,5⭐<br>главный приз 500⭐</span>
             </span>
           </button>
           <button class="menu-tile tile-roulette" data-go="roulette">
             <span class="tile-icon">🎡</span>
             <span class="tile-body">
-              <span class="tile-title">Рулетка</span>
-              <span class="tile-sub">Крути колесо до x2,4<br>ставки от 1,25⭐</span>
+              <span class="tile-label">Рулетка</span>
+              <span class="tile-headline">Крути<br>колесо</span>
+              <span class="tile-sub">до x2,4 · ставки<br>от 1,25⭐</span>
             </span>
           </button>
           <button class="menu-tile tile-withdraw" data-go="withdraw">
             <span class="tile-icon">💸</span>
             <span class="tile-body">
-              <span class="tile-title">Вывод</span>
-              <span class="tile-sub" id="tile-withdraw-sub">Ещё 15⭐ = 43 подписки</span>
+              <span class="tile-label">Вывод</span>
+              <span class="tile-headline">Ещё 15⭐</span>
+              <span class="tile-sub" id="tile-withdraw-sub">= 43 подписки</span>
             </span>
           </button>
         </div>
@@ -63,14 +68,16 @@
           <button class="menu-tile tile-mines" data-go="mines">
             <span class="tile-icon">💣</span>
             <span class="tile-body">
-              <span class="tile-title">88 Мины</span>
-              <span class="tile-sub">6 чёрных дыр · до x92</span>
+              <span class="tile-label">Мины</span>
+              <span class="tile-headline">88 Мины</span>
+              <span class="tile-sub">6 чёрных дыр<br>до x92</span>
             </span>
           </button>
           <button class="menu-tile tile-starfield" data-go="starfield">
             <span class="tile-icon">✨</span>
             <span class="tile-body">
-              <span class="tile-title">Звёздное поле</span>
+              <span class="tile-label">Игра</span>
+              <span class="tile-headline">Звёздное<br>поле</span>
               <span class="tile-sub">до x92,00</span>
             </span>
           </button>
@@ -98,36 +105,7 @@
         <button class="wide-btn" id="home-friends-invite">Позвать друзей</button>
       </div>
 
-      <div class="hero card">
-        <div class="hero-top">
-          <div>
-            <div class="label">Баланс для вывода</div>
-            <div class="big" id="home-balance">0.000 $</div>
-            <div class="sub" id="home-balance-stars">≈ 0.00 ⭐</div>
-          </div>
-          <div class="level-badge">
-            <span id="home-level">0</span>
-            <small>LVL</small>
-          </div>
-        </div>
-        <div class="progress"><div class="progress-fill" id="home-progress"></div></div>
-        <div class="progress-note" id="home-progress-note">До следующего уровня: 3 задания</div>
-      </div>
-
-      <div class="grid-2">
-        <div class="card stat">
-          <div class="label">Заморожено 24ч</div>
-          <div class="value" id="home-frozen">0.000 $</div>
-          <div class="sub" id="home-frozen-stars">≈ 0.00 ⭐</div>
-        </div>
-        <div class="card stat">
-          <div class="label">Выполнено заданий</div>
-          <div class="value" id="home-tasks">0</div>
-          <div class="sub">за всё время</div>
-        </div>
-      </div>
-
-      <div class="card">
+      <div class="card" id="daily-home-card">
         <div class="section-title">Сундук дня <span class="chip" id="daily-streak">серия 0</span></div>
         <div class="sub" id="daily-progress">0 из 3 заданий сегодня</div>
         <div class="day-strip" id="daily-days"></div>
@@ -315,6 +293,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20261125s"></script>
+<script src="app.js?v=20261125t"></script>
 </body>
 </html>
