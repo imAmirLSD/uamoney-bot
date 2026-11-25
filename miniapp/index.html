@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0f16">
   <title>UA. Mini App</title>
-  <link rel="stylesheet" href="style.css?v=20261125n">
+  <link rel="stylesheet" href="style.css?v=20261125o">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -18,6 +18,58 @@
   <main class="content">
     <!-- ГЛАВНАЯ -->
     <section class="tab active" id="tab-home">
+      <div class="card season-card">
+        <div class="season-top">
+          <div class="season-name" id="home-season-name">Игрок · сезон 1</div>
+          <div class="season-chip" id="season-level">Уровень 0</div>
+        </div>
+        <div class="season-progress">
+          <span id="season-today">Сегодня 0 из 3</span>
+          <span id="season-exp">до 1-го — 60 опыта</span>
+        </div>
+        <div class="progress"><div class="progress-fill" id="season-progress-fill"></div></div>
+      </div>
+
+      <div class="promo-card" id="promo-card">
+        <div class="promo-title" id="promo-title">Звёзды — в деньги. Деньги — в звёзды.</div>
+        <div class="promo-sub" id="promo-sub">Открывай кейсы от 2,5⭐ · главный приз 500⭐</div>
+      </div>
+
+      <div class="menu-grid">
+        <div class="menu-col">
+          <button class="menu-tile tile-roulette" data-go="roulette">
+            <span class="tile-icon">🎡</span>
+            <span class="tile-body">
+              <span class="tile-title">Рулетка</span>
+              <span class="tile-sub">Крути колесо до x2,4 · ставки</span>
+            </span>
+          </button>
+          <button class="menu-tile tile-withdraw" data-go="withdraw">
+            <span class="tile-icon">💸</span>
+            <span class="tile-body">
+              <span class="tile-title">Вывод</span>
+              <span class="tile-sub" id="tile-withdraw-sub">Ещё 15⭐ = 43 подписки</span>
+            </span>
+          </button>
+        </div>
+        <div class="menu-col">
+          <button class="menu-tile tile-mines" data-go="mines">
+            <span class="tile-icon">💣</span>
+            <span class="tile-body">
+              <span class="tile-title">88 Мины</span>
+              <span class="tile-sub">6 чёрных дыр · до x92</span>
+            </span>
+          </button>
+          <button class="menu-tile tile-starfield" data-go="starfield">
+            <span class="tile-icon">✨</span>
+            <span class="tile-body">
+              <span class="tile-title">Звёздное поле</span>
+              <span class="tile-sub">до x92,00</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="section-title">Задания <span class="chip" id="home-tasks-count">0</span></div>
         <div class="sub" id="home-tasks-progress">Сделано 0 из 15 · новые через 3 ч</div>
@@ -69,15 +121,6 @@
       </div>
 
       <div class="card">
-        <div class="section-title">Быстрые действия</div>
-        <div class="quick">
-          <button class="quick-btn primary" data-go="tasks"><span>📝</span> Задания</button>
-          <button class="quick-btn" data-go="withdraw"><span>💸</span> Вывод</button>
-          <button class="quick-btn" data-go="profile"><span>👤</span> Профиль</button>
-        </div>
-      </div>
-
-      <div class="card">
         <div class="section-title">Сундук дня <span class="chip" id="daily-streak">серия 0</span></div>
         <div class="sub" id="daily-progress">0 из 3 заданий сегодня</div>
         <div class="day-strip" id="daily-days"></div>
@@ -85,14 +128,14 @@
         <button class="wide-btn" id="daily-claim" disabled>Открыть сундук</button>
       </div>
 
-      <div class="card">
+      <div class="card" id="roulette-section">
         <div class="section-title">Рулетка <span class="chip" id="roulette-balance">0 ⭐</span></div>
         <div class="sub" id="roulette-info">16 секторов · возврат 88% · максимум x2.4</div>
         <div class="case-list" id="roulette-list"></div>
         <div class="case-result hidden" id="roulette-result"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="starfield-section">
         <div class="section-title">Звёздное поле <span class="chip" id="starfield-balance">0 ⭐</span></div>
         <div class="sub" id="starfield-info">25 клеток · 6 чёрных дыр · возврат 80%</div>
         <div class="case-list" id="starfield-bets"></div>
@@ -191,7 +234,6 @@
   <nav class="bottom-nav">
     <button class="nav-item active" data-tab="home"><span>🏠</span>Главная</button>
     <button class="nav-item" data-tab="tasks"><span>📝</span>Задания</button>
-    <button class="nav-item" data-tab="withdraw"><span>💸</span>Вывод</button>
     <button class="nav-item" data-tab="profile"><span>👤</span>Профиль</button>
   </nav>
 </div>
@@ -232,6 +274,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20261125n"></script>
+<script src="app.js?v=20261125o"></script>
 </body>
 </html>

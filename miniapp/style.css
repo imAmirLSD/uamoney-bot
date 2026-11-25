@@ -96,6 +96,53 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 .quick-btn span { font-size: 20px; }
 .quick-btn.primary { background: rgba(123,97,255,.18); border-color: rgba(123,97,255,.5); }
 
+/* Меню на главной: сезон, баннер, плитки */
+.season-card { padding: 14px; }
+.season-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.season-name { font-weight: 750; font-size: 15px; }
+.season-chip {
+  font-size: 12px; color: var(--accent-2); background: rgba(0,208,165,.12);
+  border: 1px solid rgba(0,208,165,.3); border-radius: 99px; padding: 4px 10px;
+}
+.season-progress { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+.season-card .progress { margin-top: 8px; }
+
+.promo-card {
+  position: relative; margin-bottom: 12px; padding: 18px 16px;
+  border-radius: var(--radius); overflow: hidden;
+  background: linear-gradient(120deg, rgba(123,97,255,.28), rgba(0,208,165,.16)), var(--card);
+  border: 1px solid rgba(167,139,250,.28);
+}
+.promo-card::after {
+  content: ""; position: absolute; right: -30px; top: -40px; width: 140px; height: 140px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(253,224,71,.22), transparent 70%);
+  pointer-events: none;
+}
+.promo-title { font-size: 17px; font-weight: 800; line-height: 1.25; max-width: 86%; }
+.promo-sub { margin-top: 6px; color: #c4b5fd; font-size: 12px; max-width: 86%; }
+
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.menu-col { display: flex; flex-direction: column; gap: 10px; }
+.menu-tile {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 74px;
+  padding: 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.07);
+  background: var(--card); color: var(--text); text-align: left; cursor: pointer;
+}
+.tile-icon {
+  flex: 0 0 38px; width: 38px; height: 38px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 19px;
+  background: rgba(123,97,255,.16);
+}
+.tile-body { display: flex; flex-direction: column; min-width: 0; }
+.tile-title { font-size: 14px; font-weight: 750; }
+.tile-sub { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.25; }
+.tile-roulette { background: linear-gradient(135deg, rgba(123,97,255,.18), var(--card)); }
+.tile-withdraw { background: linear-gradient(135deg, rgba(0,208,165,.14), var(--card)); }
+.tile-mines { background: linear-gradient(135deg, rgba(255,95,109,.14), var(--card)); }
+.tile-mines .tile-icon { background: rgba(255,95,109,.18); }
+.tile-starfield { background: linear-gradient(135deg, rgba(253,224,71,.13), var(--card)); }
+.tile-starfield .tile-icon { background: rgba(253,224,71,.16); }
+
 .soon-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
 .soon-row:last-child { border-bottom: 0; }
 .chip, .demo-chip { font-size: 11px; color: var(--muted); background: rgba(255,255,255,.07); border-radius: 99px; padding: 3px 9px; }
@@ -152,7 +199,7 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   background: rgba(13,15,22,.94); backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255,255,255,.07);
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom));

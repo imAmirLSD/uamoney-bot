@@ -60,10 +60,17 @@ function renderProfile(data) {
   setText("home-tasks", String(u.completed || 0));
   setText("header-level", "Уровень " + (u.level || 0));
   setText("home-level", String(u.level || 0));
+  setText("home-season-name", (u.username || "Игрок") + " · сезон 1");
+  setText("season-level", "Уровень " + (u.level || 0));
 
   const need = Math.max(0, (u.exp_next || 3) - (u.exp || 0));
   const pct = Math.min(100, Math.round(((u.exp || 0) / Math.max(1, u.exp_next || 3)) * 100));
   $("home-progress").style.width = pct + "%";
+  const seasonFill = $("season-progress-fill");
+  if (seasonFill) seasonFill.style.width = pct + "%";
+  const levelWord = u.level ? "следующего" : "1-го";
+  setText("season-today", "Сегодня 0 из 3");
+  setText("season-exp", "до " + levelWord + " — " + need + " опыта");
   setText("home-progress-note", need ? "До следующего уровня: " + need + " заданий" : "Следующий уровень уже близко");
 
   setText("withdraw-balance", usd(b.usd));
@@ -213,6 +220,10 @@ function renderHistory(data) {
 
 function renderDaily(data) {
   daily = data;
+  setText(
+    "season-today",
+    "Сегодня " + Number(data.completed_today || 0) + " из " + Number(data.goal || 3)
+  );
   setText("daily-streak", "серия " + Number(data.streak || 0));
   setText(
     "daily-progress",
@@ -858,11 +869,41 @@ function sendToBot(payload) {
   setTimeout(() => { try { tg.close(); } catch (e) {} }, 250);
 }
 
+const PROMO_SLIDES = [
+  { title: "Звёзды — в деньги. Деньги — в звёзды.", sub: "Открывай кейсы от 2,5⭐ · главный приз 500⭐" },
+  { title: "Тут могла бы быть ваша реклама", sub: "Крути рулетку до x2,4 · ставки от 1,25⭐" },
+  { title: "Кейсы", sub: "3 кейса от 2,5⭐ · шансы честные · главный приз 500⭐" },
+];
+function startPromoCarousel() {
+  const title = $("promo-title");
+  const sub = $("promo-sub");
+  if (!title || !sub) return;
+  let index = 0;
+  const apply = () => {
+    title.textContent = PROMO_SLIDES[index].title;
+    sub.textContent = PROMO_SLIDES[index].sub;
+  };
+  apply();
+  setInterval(() => {
+    index = (index + 1) % PROMO_SLIDES.length;
+    apply();
+  }, 3500);
+}
+
 document.querySelectorAll(".nav-item").forEach(el => {
   el.addEventListener("click", () => switchTab(el.dataset.tab));
 });
 document.querySelectorAll("[data-go]").forEach(el => {
-  el.addEventListener("click", () => switchTab(el.dataset.go));
+  el.addEventListener("click", () => {
+    const go = el.dataset.go;
+    if (go === "roulette" || go === "mines" || go === "starfield") {
+      switchTab("home");
+      const target = $(go === "roulette" ? "roulette-section" : "starfield-section");
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+      return;
+    }
+    switchTab(go);
+  });
 });
 
 $("check-tasks").addEventListener("click", () => {
@@ -921,6 +962,7 @@ $("copy-ref").addEventListener("click", async () => {
 });
 
 updateStarButtons();
+startPromoCarousel();
 api("/profile")
   .then(renderProfile)
   .catch(error => toast("Не удалось загрузить профиль: " + error.message));
