@@ -116,10 +116,12 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 .pass-live {
   position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
 }
-.pass-level-num {
-  fill: #ffffff; font-family: Arial, Helvetica, sans-serif; font-weight: 700;
-  font-size: 210px; letter-spacing: -4px;
+.pass-title, .pass-level {
+  fill: #ffffff; font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-weight: 600;
 }
+.pass-title { font-size: 103px; }
+.pass-level { font-size: 220px; }
 
 .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; align-items: start; }
 .menu-col { display: flex; flex-direction: column; gap: 8px; }
