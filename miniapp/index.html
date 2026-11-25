@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0f16">
   <title>UA. Mini App</title>
-  <link rel="stylesheet" href="style.css?v=20261125o">
+  <link rel="stylesheet" href="style.css?v=20261125q">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -273,7 +273,41 @@
   </div>
 </div>
 
+<div class="overlay hidden" id="levels-overlay">
+  <div class="sheet levels-sheet">
+    <div class="sheet-head">
+      <button id="levels-back" class="sheet-back">‹ Назад</button>
+      <div class="sheet-title">Уровни</div>
+      <span class="chip" id="levels-season">сезон 1 · ещё 11 дней</span>
+    </div>
+
+    <div class="levels-header">
+      <div class="levels-name" id="levels-name">Игрок</div>
+      <div class="levels-level" id="levels-level">Уровень 0</div>
+      <div class="levels-exp" id="levels-exp">40 / 100 опыта · 100 опыта — новый уровень</div>
+      <div class="progress"><div class="progress-fill" id="levels-progress"></div></div>
+    </div>
+
+    <div class="section-title track-title">Награды <span class="chip">обычная дорожка</span></div>
+    <div class="track-viewport" id="normal-track-viewport">
+      <div class="track-rail" id="normal-track"></div>
+    </div>
+
+    <div class="section-title track-title gold-title">Золотая дорожка <span class="chip" id="gold-friends">0 из 10 друзей</span></div>
+    <div class="gold-hint" id="gold-hint">Пригласи 10 друзей — каждый должен сделать 5 заданий.</div>
+    <button class="wide-btn gold-btn" id="gold-invite">Позвать друзей</button>
+    <div class="track-viewport gold" id="gold-track-viewport">
+      <div class="track-rail" id="gold-track"></div>
+    </div>
+    <div class="gold-note">Мишка в финале · ещё 29 золотых наград: кейсы до 50⭐, спины, сундуки, золотая рамка</div>
+
+    <div class="section-title quest-title">Квесты на опыт</div>
+    <div class="quests" id="quests-list"></div>
+    <div class="fineprint">Задания дают опыт, каждые 100 — новый уровень и награда. Награды с деньгами — из того, что ты приносишь боту: бывает, ждут следующих подписок, а золотые — подписок друзей. Награды созревают 12 часов, как токены заданий.</div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20261125o"></script>
+<script src="app.js?v=20261125q"></script>
 </body>
 </html>
