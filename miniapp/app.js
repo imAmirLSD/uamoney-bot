@@ -1161,6 +1161,10 @@ document.querySelectorAll(".nav-item").forEach(el => {
 document.querySelectorAll("[data-go]").forEach(el => {
   el.addEventListener("click", () => {
     const go = el.dataset.go;
+    if (go === "cases") {
+      openCasesScreen();
+      return;
+    }
     if (go === "roulette" || go === "mines" || go === "starfield") {
       switchTab("home");
       const target = $(go === "roulette" ? "roulette-section" : "starfield-section");
