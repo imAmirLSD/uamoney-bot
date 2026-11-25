@@ -1158,6 +1158,24 @@ function openLevels() {
 document.querySelectorAll(".nav-item").forEach(el => {
   el.addEventListener("click", () => switchTab(el.dataset.tab));
 });
+function showLegacy(id) {
+  const box = $("home-legacy");
+  if (!box) return;
+  box.classList.remove("hidden");
+  box.querySelectorAll(".card").forEach(card => {
+    card.classList.toggle("hidden", card.id !== id);
+  });
+  switchTab("home");
+  const target = $(id);
+  if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+}
+
+function hideLegacy() {
+  const box = $("home-legacy");
+  if (box) box.classList.add("hidden");
+  window.scrollTo(0, 0);
+}
+
 document.querySelectorAll("[data-go]").forEach(el => {
   el.addEventListener("click", () => {
     const go = el.dataset.go;
@@ -1166,14 +1184,17 @@ document.querySelectorAll("[data-go]").forEach(el => {
       return;
     }
     if (go === "roulette" || go === "mines" || go === "starfield") {
-      switchTab("home");
-      const target = $(go === "roulette" ? "roulette-section" : "starfield-section");
-      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+      showLegacy(go === "roulette" ? "roulette-section" : "starfield-section");
       return;
     }
     switchTab(go);
   });
 });
+
+const legacyBack = $("legacy-back");
+if (legacyBack) legacyBack.addEventListener("click", hideLegacy);
+const openDaily = $("open-daily");
+if (openDaily) openDaily.addEventListener("click", () => showLegacy("daily-home-card"));
 
 $("check-tasks").addEventListener("click", () => {
   sendToBot({ action: "check_tasks" });
