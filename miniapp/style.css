@@ -380,7 +380,7 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 
 .case-home-row {
   display: grid;
-  grid-template-columns: 72px 1fr auto;
+  grid-template-columns: 46px 66px 1fr auto;
   align-items: center;
   gap: 8px;
 }

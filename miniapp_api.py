@@ -358,9 +358,19 @@ async def miniapp_cases(request: web.Request) -> web.Response:
         )
 
     recent_wins = []
+    wins_total_stars = 0.0
+    wins_count = 0
     try:
         async with aiosqlite.connect("bot_database.db") as db:
             db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT COUNT(*) AS n, COALESCE(SUM(prize_stars), 0) AS s "
+                "FROM miniapp_case_rounds WHERE created_at >= datetime('now', '-1 day')"
+            ) as cursor:
+                stat = await cursor.fetchone()
+            if stat:
+                wins_count = int(stat["n"])
+                wins_total_stars = float(stat["s"])
             async with db.execute(
                 "SELECT case_id, prize_stars, created_at FROM miniapp_case_rounds "
                 "ORDER BY id DESC LIMIT 8"
@@ -378,6 +388,8 @@ async def miniapp_cases(request: web.Request) -> web.Response:
         {
             "cases": cases,
             "recent_wins": recent_wins,
+            "wins_total_stars": round(wins_total_stars, 2),
+            "wins_count": wins_count,
             "star_usd": STAR_USD,
             "message": "Приз зачисляется сразу на выводимый баланс. Каждый раунд проверяется по коду.",
         }

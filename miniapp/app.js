@@ -297,7 +297,7 @@ function renderCases(data) {
     });
   }
   renderCasesGrid();
-  renderWinsTicker(data.recent_wins || []);
+  renderWinsTicker(data);
 }
 
 function renderCasesGrid() {
@@ -340,18 +340,19 @@ function renderCasesGrid() {
   });
 }
 
-function renderWinsTicker(wins) {
+function renderWinsTicker(data) {
   const box = $("wins-ticker");
   if (!box) return;
-  if (!wins.length) {
-    box.textContent = "Сейчас выигрывают: за сутки первые призы появятся здесь";
-    return;
-  }
-  box.textContent =
-    "Сейчас выигрывают: " +
-    wins.slice(0, 4).map(item =>
+  const wins = data.recent_wins || [];
+  const total = Number(data.wins_total_stars || 0).toFixed(0);
+  const count = Number(data.wins_count || 0);
+  let text = "Сейчас выигрывают за сутки: вывели " + total + " ⭐ и " + count + " призов";
+  if (wins.length) {
+    text += " · " + wins.slice(0, 3).map(item =>
       item.case + " +" + Number(item.stars || 0).toFixed(1) + " ⭐"
     ).join(" · ");
+  }
+  box.textContent = text;
 }
 
 function openCasesScreen() {
@@ -386,12 +387,17 @@ function openCaseDetail(caseId) {
 
   const stat = document.createElement("div");
   stat.className = "case-big-stat";
+  const prizes = item.prizes || [];
+  const featured = prizes.length
+    ? prizes[Math.floor(prizes.length / 2)].stars
+    : item.expected_stars;
   const statValue = document.createElement("div");
   statValue.className = "case-big-value";
-  statValue.textContent = Number(item.expected_stars || 0).toFixed(2) + " ⭐";
+  statValue.textContent = Number(featured || 0).toFixed(2) + " ⭐";
   const statMeta = document.createElement("div");
   statMeta.className = "sub";
-  statMeta.textContent = "в среднем за раунд · 0/0";
+  statMeta.textContent =
+    prizes.length + " призов · возврат " + Number(item.return_percent || 0).toFixed(0) + "% · 0/0";
   stat.appendChild(statValue);
   stat.appendChild(statMeta);
   body.appendChild(stat);
@@ -412,6 +418,11 @@ function openCaseDetail(caseId) {
     ? "Добрать " + Number(need).toFixed(2) + " ⭐ на заданиях"
     : "Выигрыш сразу на балансе · код раунда сохраняется";
   body.appendChild(hint);
+
+  const tableTitle = document.createElement("div");
+  tableTitle.className = "section-title";
+  tableTitle.textContent = "Внутри " + prizes.length + " призов шанс у каждого";
+  body.appendChild(tableTitle);
 
   const table = document.createElement("div");
   table.className = "prize-table";
