@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0f16">
+  <title>UA. Mini App</title>
+  <link rel="stylesheet" href="style.css?v=20261125c">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="brand-dot"></span> UA. <span class="brand-muted">mini</span></div>
+    <div class="topbar-right" id="header-level">Уровень 0</div>
+  </header>
+
+  <main class="content">
+    <!-- ГЛАВНАЯ -->
+    <section class="tab active" id="tab-home">
+      <div class="hero card">
+        <div class="hero-top">
+          <div>
+            <div class="label">Баланс для вывода</div>
+            <div class="big" id="home-balance">0.000 $</div>
+            <div class="sub" id="home-balance-stars">≈ 0.00 ⭐</div>
+          </div>
+          <div class="level-badge">
+            <span id="home-level">0</span>
+            <small>LVL</small>
+          </div>
+        </div>
+        <div class="progress"><div class="progress-fill" id="home-progress"></div></div>
+        <div class="progress-note" id="home-progress-note">До следующего уровня: 3 задания</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card stat">
+          <div class="label">Заморожено 24ч</div>
+          <div class="value" id="home-frozen">0.000 $</div>
+          <div class="sub" id="home-frozen-stars">≈ 0.00 ⭐</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Выполнено заданий</div>
+          <div class="value" id="home-tasks">0</div>
+          <div class="sub">за всё время</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Быстрые действия</div>
+        <div class="quick">
+          <button class="quick-btn primary" data-go="tasks"><span>📝</span> Задания</button>
+          <button class="quick-btn" data-go="withdraw"><span>💸</span> Вывод</button>
+          <button class="quick-btn" data-go="profile"><span>👤</span> Профиль</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Кейсы <span class="chip" id="cases-balance">0 ⭐</span></div>
+        <div class="sub">Шансы указаны честно, код раунда сохраняется в истории</div>
+        <div class="case-list" id="case-list"></div>
+        <div class="case-result hidden" id="case-result"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Рулетка <span class="chip" id="roulette-balance">0 ⭐</span></div>
+        <div class="sub" id="roulette-info">16 секторов · возврат 88% · максимум x2.4</div>
+        <div class="case-list" id="roulette-list"></div>
+        <div class="case-result hidden" id="roulette-result"></div>
+      </div>
+
+      <div class="card muted-card">
+        <div class="section-title">Скоро</div>
+        <div class="soon-row"><span>⭐ Звёздное поле</span><span class="chip">скоро</span></div>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЯ -->
+    <section class="tab" id="tab-tasks">
+      <div class="card">
+        <div class="section-title">Задания <span class="chip">доступно: <span id="tasks-count">0</span></span></div>
+        <div class="sub" id="tasks-progress">Выполнено за всё время: 0</div>
+        <div class="notice">Награда приходит через 12 часов. Держи подписку: при отписке раньше срока начисление отменяется.</div>
+        <div class="sub" id="tasks-warning"></div>
+      </div>
+      <div id="tasks-list" class="task-list"></div>
+      <button class="wide-btn" id="check-tasks">Проверить задания</button>
+      <div class="fineprint">Проверка пришлёт результат в чат с ботом.</div>
+    </section>
+
+    <!-- ВЫВОД -->
+    <section class="tab" id="tab-withdraw">
+      <div class="card hero compact">
+        <div class="label">Доступно к выводу</div>
+        <div class="big" id="withdraw-balance">0.000 $</div>
+        <div class="sub" id="withdraw-balance-stars">≈ 0.00 ⭐</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Способ вывода</div>
+        <div class="segmented">
+          <button class="seg active" data-method="stars">Telegram Stars</button>
+          <button class="seg" data-method="usdt">USDT</button>
+        </div>
+        <div id="stars-block">
+          <div class="sub rate">Курс: 1 ⭐ = 0.017 $</div>
+          <div class="presets" id="star-presets">
+            <button class="preset" data-stars="15">15 ⭐</button>
+            <button class="preset" data-stars="25">25 ⭐</button>
+            <button class="preset" data-stars="50">50 ⭐</button>
+            <button class="preset" data-stars="100">100 ⭐</button>
+          </div>
+          <div class="field-row">
+            <input id="custom-stars" type="number" min="15" step="1" placeholder="Своя сумма, ⭐">
+            <button class="small-btn" id="custom-star-btn">Выбрать</button>
+          </div>
+        </div>
+        <div id="usdt-block" class="hidden">
+          <div class="sub">Минимальная сумма указана в боте. Продолжение — в чате с ботом.</div>
+        </div>
+        <button class="wide-btn" id="do-withdraw">Продолжить в боте</button>
+        <div class="fineprint">Заявка создаётся в чате с ботом — там же нужно будет приложить чек.</div>
+      </div>
+    </section>
+
+    <!-- ПРОФИЛЬ -->
+    <section class="tab" id="tab-profile">
+      <div class="card hero compact">
+        <div class="label">Профиль</div>
+        <div class="profile-name" id="profile-name">Пользователь</div>
+        <div class="sub" id="profile-id">ID: —</div>
+      </div>
+      <div class="grid-2">
+        <div class="card stat">
+          <div class="label">Заработано всего</div>
+          <div class="value" id="profile-earned">0.000 $</div>
+          <div class="sub" id="profile-earned-stars">≈ 0.00 ⭐</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Заданий</div>
+          <div class="value" id="profile-completed">0</div>
+          <div class="sub">выполнено</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">Пригласить друга</div>
+        <div class="sub">10% с заданий друга · 3% с друзей друга · 1% с третьего уровня</div>
+        <div class="field-row">
+          <input id="ref-link" readonly value="https://t.me/UAMONEY_BOT">
+          <button class="small-btn" id="copy-ref">Копировать</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">История <span class="chip" id="history-count">0</span></div>
+        <div class="sub" id="history-summary">Операций пока нет</div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="home"><span>🏠</span>Главная</button>
+    <button class="nav-item" data-tab="tasks"><span>📝</span>Задания</button>
+    <button class="nav-item" data-tab="withdraw"><span>💸</span>Вывод</button>
+    <button class="nav-item" data-tab="profile"><span>👤</span>Профиль</button>
+  </nav>
+</div>
+<div id="toast" class="toast"></div>
+<script src="app.js?v=20261125c"></script>
+</body>
+</html>

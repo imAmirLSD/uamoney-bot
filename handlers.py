@@ -4,6 +4,10 @@ import asyncio, html, json, os, random, re, sqlite3, time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import aiohttp, aiogram
+try:
+    from aiogram.types import WebAppInfo
+except ImportError:  # на старых версиях aiogram кнопка просто не появится
+    WebAppInfo = None
 from aiogram.types import FSInputFile as _AiogramFSInputFile
 import core
 from core import *
@@ -1039,6 +1043,10 @@ async def open_leaderboard(call: types.CallbackQuery):
 async def show_leaderboard(call: types.CallbackQuery):
     mode = call.data.removeprefix("leaderboard_")
 
+    # Администратор не участвует в рейтингах (ни в списке, ни в расчёте места).
+    excluded_ids = tuple(int(x) for x in getattr(core, "ADMIN_IDS", []))
+    excluded_sql = f"({', '.join('?' for _ in excluded_ids)})" if excluded_ids else "(0)"
+
     # Замени ID_... на числовые ID своих Premium Emoji.
     premium_emoji_ids = {
         "tasks_title": "5361767787129766930",
@@ -1071,54 +1079,60 @@ async def show_leaderboard(call: types.CallbackQuery):
 
         if mode == "tasks":
             title = f"{premium_emoji('tasks_title', '📝')}<b>Топ заданий</b>"
-            query = """
+            query = f"""
                 SELECT user_id, username, COALESCE(completed_tasks, 0) AS score
                 FROM users
                 WHERE COALESCE(completed_tasks, 0) > 0
+                  AND user_id NOT IN {excluded_sql}
                 ORDER BY score DESC, user_id ASC
                 LIMIT 10
             """
-            scores_query = """
+            scores_query = f"""
                 SELECT user_id, COALESCE(completed_tasks, 0) AS score
                 FROM users
+                WHERE user_id NOT IN {excluded_sql}
             """
             unit = "зад."
 
         elif mode == "referrals":
             title = f"{premium_emoji('referrals_title', '🏆')}<b>Топ Рефеводов</b>"
-            query = """
+            query = f"""
                 SELECT u.user_id, u.username, COUNT(r.user_id) AS score
                 FROM users u
                 LEFT JOIN users r ON r.referrer_id = u.user_id
+                WHERE u.user_id NOT IN {excluded_sql}
                 GROUP BY u.user_id, u.username
                 HAVING COUNT(r.user_id) > 0
                 ORDER BY score DESC, u.user_id ASC
                 LIMIT 10
             """
-            scores_query = """
+            scores_query = f"""
                 SELECT u.user_id, COUNT(r.user_id) AS score
                 FROM users u
                 LEFT JOIN users r ON r.referrer_id = u.user_id
+                WHERE u.user_id NOT IN {excluded_sql}
                 GROUP BY u.user_id
             """
             unit = "реф"
 
         else:
             title = f"{premium_emoji('rich_title', '💰')}<b>Топ богачей</b>"
-            query = """
+            query = f"""
                 SELECT user_id, username, COALESCE(lifetime_earned, 0) AS score
                 FROM users
                 WHERE COALESCE(lifetime_earned, 0) > 0
+                  AND user_id NOT IN {excluded_sql}
                 ORDER BY score DESC, user_id ASC
                 LIMIT 10
             """
-            scores_query = """
+            scores_query = f"""
                 SELECT user_id, COALESCE(lifetime_earned, 0) AS score
                 FROM users
+                WHERE user_id NOT IN {excluded_sql}
             """
             unit = "$"
 
-        rows = await db.execute_fetchall(query)
+        rows = await db.execute_fetchall(query, excluded_ids)
 
         # Место считается среди всех пользователей, в том числе с нулевым результатом.
         rank_query = f"""
@@ -1132,7 +1146,7 @@ async def show_leaderboard(call: types.CallbackQuery):
             )
             SELECT place FROM ranked WHERE user_id = ?
         """
-        async with db.execute(rank_query, (call.from_user.id,)) as cursor:
+        async with db.execute(rank_query, (*excluded_ids, call.from_user.id)) as cursor:
             rank_row = await cursor.fetchone()
 
     user_rank = rank_row["place"] if rank_row else None
@@ -1824,7 +1838,12 @@ async def show_cabinet(message: types.Message, state: FSMContext):
         callback_data="daily_bonus",
         icon_custom_emoji_id="5458870142924526130",
     )
-    keyboard.adjust(2, 1)
+    miniapp_url = getattr(core, "MINIAPP_URL", "https://uamoneybots.ru/miniapp/?v=20261125c")
+    if WebAppInfo is not None and user_id in ADMIN_IDS:
+        keyboard.button(text="🌐 Mini App", web_app=WebAppInfo(url=miniapp_url))
+        keyboard.adjust(2, 1, 1)
+    else:
+        keyboard.adjust(2, 1)
 
     await message.answer(
         text,
@@ -2330,12 +2349,29 @@ def _withdrawal_subscription_keyboard():
 
 
 async def _withdrawal_subscriptions_ok(user_id: int) -> bool:
-    """Разрешает вывод только при подтверждённом членстве в канале и чате."""
-    results = await asyncio.gather(
-        _daily_bonus_is_member(user_id, "UAMONY"),
-        _daily_bonus_is_member(user_id, "UAMONEYCHAT"),
-    )
-    return all(result is True for result in results)
+    """Канал обязателен; чат проверяем отдельно, т.к. бот может быть кикнут."""
+    channel_ok = await _daily_bonus_is_member(user_id, "UAMONY")
+    if channel_ok is not True:
+        return False
+
+    try:
+        member = await bot.get_chat_member("@UAMONEYCHAT", user_id)
+    except aiogram.exceptions.TelegramForbiddenError:
+        # Бот исключён из чата — не блокируем вывод из-за собственной ошибки.
+        # Администратору нужно вернуть бота в @UAMONEYCHAT и выдать админа.
+        print(
+            f"⚠️ Вывод: бот кикнут из @UAMONEYCHAT, проверка чата пропущена "
+            f"для user_id={user_id}; верните бота в чат"
+        )
+        return True
+    except Exception as exc:
+        print(f"⚠️ Вывод: не удалось проверить @UAMONEYCHAT для {user_id}: {exc}")
+        return False
+
+    status = str(getattr(member, "status", "")).lower()
+    if status == "restricted":
+        return bool(getattr(member, "is_member", False))
+    return status in {"member", "administrator", "creator"}
 
 
 async def _notify_withdrawal_subscription_required(message):
@@ -3290,6 +3326,8 @@ async def show_pulsar_tasks_menu(message: types.Message):
         url = pulsar_sponsor_link(sponsor)
         if not url:
             continue
+        sponsor_id = str(sponsor.get("id") or sponsor.get("sponsor_id") or "") if isinstance(sponsor, dict) else ""
+        await save_pulsar_offer(user_id, signature, url, sponsor_id)
         keyboard.button(text="Подписаться", url=url)
         available += 1
         potential += reward
@@ -4667,6 +4705,9 @@ async def check_user_tasks(call: types.CallbackQuery):
 async def cmd_start(message: types.Message, command: CommandObject = None):
     _ensure_promo_pause_monitor_started()
     user_id = message.from_user.id
+    # Гарантированно создаём пользователя в users: core.get_user() только читает,
+    # и без этого начисления Pulsar/PiarFlow для нового пользователя теряются.
+    await get_user(user_id)
 
     # Реферальная система
     if command and command.args:
@@ -6138,6 +6179,288 @@ async def invalid_withdrawal_amount_input(message: types.Message):
         "Чтобы отменить вывод и перейти в другой раздел, выберите пункт меню "
         "или отправьте /cancel."
     )
+
+
+@dp.message(Command("miniapp"))
+async def cmd_miniapp(message: types.Message):
+    """Открывает Mini App отдельной кнопкой из любого места чата."""
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("Mini App пока доступен только администратору.")
+        return
+    if WebAppInfo is None:
+        await message.answer("Mini App недоступен на этой версии aiogram.")
+        return
+    url = getattr(core, "MINIAPP_URL", "https://uamoneybots.ru/miniapp/?v=20261125c")
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[
+            InlineKeyboardButton(text="🌐 Открыть Mini App", web_app=WebAppInfo(url=url))
+        ]]
+    )
+    await message.answer(
+        "Нажмите кнопку ниже, чтобы открыть Mini App UA.",
+        reply_markup=keyboard,
+    )
+
+
+def _miniapp_normalize_check_result(result):
+    """Приводит разные форматы ответов проверок к (completed, reward)."""
+    if isinstance(result, dict):
+        raw_completed = result.get("completed", result.get("count", 0))
+        raw_reward = result.get("total_reward", result.get("reward", 0))
+    elif isinstance(result, (tuple, list)) and len(result) >= 2:
+        raw_completed, raw_reward = result[0], result[1]
+    else:
+        raw_completed, raw_reward = result or 0, 0
+    if isinstance(raw_completed, (list, set, dict)):
+        completed = len(raw_completed)
+    else:
+        completed = int(raw_completed or 0)
+    return completed, float(raw_reward or 0.0)
+
+
+async def _miniapp_check_flyer_and_custom(user_id: int, language: str):
+    """Проверка заданий №1: Flyer + кастомные подписки."""
+    completed = 0
+    total_reward = 0.0
+
+    flyer_tasks = await flyer_get_tasks(user_id, language, limit=20)
+    for task in flyer_tasks:
+        signature = task.get("signature", "")
+        if not signature:
+            continue
+        status = await flyer_check_task(signature, user_id)
+        if status not in (True, "completed", "done", "complete", "waiting"):
+            continue
+        saved_status = await get_task_status(user_id, signature)
+        if saved_status in ("completed", "done", "complete", "waiting"):
+            continue
+        reward = float(FLZAD)
+        balance_ok = await update_user_balance(user_id, frozen_amount=reward)
+        tasks_ok = await update_user_balance(user_id, completed_tasks=1)
+        if not balance_ok or not tasks_ok:
+            raise RuntimeError(f"Не удалось сохранить награду Flyer: {signature}")
+        await add_frozen_transaction(user_id, reward, "core.flyer", signature)
+        await set_task_status(user_id, signature, "waiting" if status == "waiting" else "completed")
+        completed += 1
+        total_reward += reward
+
+    for task in await get_active_custom_tasks():
+        if task.get("task_type") != "subscribe_channel" or not task.get("channel_username"):
+            continue
+        try:
+            member = await bot.get_chat_member(f"@{task['channel_username']}", user_id)
+            if str(getattr(member, "status", "")).lower() not in ("member", "administrator", "creator"):
+                continue
+            async with aiosqlite.connect("bot_database.db") as db:
+                async with db.execute(
+                    "SELECT 1 FROM custom_task_completions WHERE task_id=? AND user_id=?",
+                    (task["id"], user_id),
+                ) as cursor:
+                    if await cursor.fetchone():
+                        continue
+            await complete_custom_task(task["id"], user_id)
+            reward = float(task.get("price") or 0)
+            await update_user_balance(user_id, frozen_amount=reward, completed_tasks=1)
+            await add_frozen_transaction(user_id, reward, "custom_subscribe", task["id"])
+            completed += 1
+            total_reward += reward
+        except Exception as exc:
+            print(f"⚠️ Mini App custom check: {exc}")
+
+    return completed, total_reward
+
+
+async def _miniapp_check_user_tasks(user_id: int):
+    """Проверка заданий №2: продвигаемые каналы и чаты."""
+    _ensure_promo_pause_monitor_started()
+    await _refresh_promo_task_pauses()
+    completed = 0
+    total_reward = 0.0
+    reward = float(await get_setting("user_task_reward") or 0.015)
+
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM user_tasks "
+            "WHERE is_active=TRUE AND task_type IN ('channel','chat') "
+            "AND COALESCE(is_paused,0)=0 AND current_completions < max_completions "
+            "AND id NOT IN (SELECT task_id FROM user_task_completions WHERE user_id=?)",
+            (user_id,),
+        ) as cursor:
+            tasks = await cursor.fetchall()
+
+    for task in tasks:
+        try:
+            admin_status = await _promo_bot_admin_status(task["channel_username"])
+            if admin_status is not True:
+                if admin_status is False:
+                    async with aiosqlite.connect("bot_database.db") as db:
+                        await db.execute("UPDATE user_tasks SET is_paused=1 WHERE id=?", (task["id"],))
+                        await db.commit()
+                continue
+            if not await _promo_target_is_member(user_id, task["channel_username"]):
+                continue
+
+            newly_completed = False
+            async with aiosqlite.connect("bot_database.db") as db:
+                await db.execute("BEGIN IMMEDIATE")
+                cursor = await db.execute(
+                    "INSERT OR IGNORE INTO user_task_completions (task_id, user_id) "
+                    "SELECT ?, ? WHERE EXISTS (SELECT 1 FROM user_tasks "
+                    "WHERE id=? AND is_active=TRUE AND task_type IN ('channel','chat') "
+                    "AND current_completions < max_completions AND COALESCE(is_paused,0)=0)",
+                    (task["id"], user_id, task["id"]),
+                )
+                if cursor.rowcount == 1:
+                    update_cursor = await db.execute(
+                        "UPDATE user_tasks SET current_completions=current_completions+1 "
+                        "WHERE id=? AND is_active=TRUE AND task_type IN ('channel','chat') "
+                        "AND current_completions < max_completions AND COALESCE(is_paused,0)=0",
+                        (task["id"],),
+                    )
+                    newly_completed = update_cursor.rowcount == 1
+                    if newly_completed:
+                        await db.execute(
+                            "UPDATE user_tasks SET is_active=FALSE "
+                            "WHERE id=? AND current_completions >= max_completions",
+                            (task["id"],),
+                        )
+                    else:
+                        await db.execute(
+                            "DELETE FROM user_task_completions WHERE task_id=? AND user_id=?",
+                            (task["id"], user_id),
+                        )
+                await db.commit()
+
+            if newly_completed:
+                await update_user_balance(user_id, frozen_amount=reward, completed_tasks=1)
+                await add_frozen_transaction(user_id, reward, "user_task", task["id"])
+                completed += 1
+                total_reward += reward
+        except Exception as exc:
+            print(f"⚠️ Mini App user task check: {exc}")
+
+    return completed, total_reward
+
+
+async def _miniapp_check_all_tasks(message: types.Message):
+    """Проверяет задания №1–№4 по действию из Mini App."""
+    user_id = message.from_user.id
+    language = (getattr(message.from_user, "language_code", None) or "ru")[:16]
+    completed = 0
+    total_reward = 0.0
+
+    checks = (
+        ("№1", lambda: _miniapp_check_flyer_and_custom(user_id, language)),
+        ("№2", lambda: _miniapp_check_user_tasks(user_id)),
+        ("№3", lambda: piarflow_check_and_complete(user_id)),
+        ("№4", lambda: pulsar_check_and_complete(user_id, language)),
+    )
+    for label, check in checks:
+        try:
+            done, reward = _miniapp_normalize_check_result(await check())
+            completed += done
+            total_reward += reward
+        except Exception as exc:
+            print(f"⚠️ Mini App check {label}: {exc}")
+
+    if completed > 0:
+        asyncio.create_task(show_ad_at_opportunity(user_id, "after_task"))
+        result_text = _task_check_success_text(completed, total_reward)
+    else:
+        result_text = _task_check_empty_text()
+
+    await message.answer(
+        result_text,
+        parse_mode="HTML",
+        link_preview_options=LinkPreviewOptions(is_disabled=True),
+    )
+
+
+# ============================================================
+# Mini App: данные из веб-приложения приходят обычным сообщением.
+# ============================================================
+@dp.message(F.web_app_data)
+async def miniapp_web_app_data(message: types.Message, state: FSMContext):
+    """Обрабатывает действия Mini App, не дублируя бизнес-логику вывода."""
+    user_id = message.from_user.id
+    try:
+        payload = json.loads(message.web_app_data.data)
+    except Exception:
+        await message.answer("❌ Не удалось прочитать данные Mini App. Откройте его заново из бота.")
+        return
+
+    action = payload.get("action")
+    if action == "check_tasks":
+        await _miniapp_check_all_tasks(message)
+        return
+
+    if action == "withdraw_usdt":
+        user = await get_user(user_id)
+        if not user:
+            await message.answer("❌ Не удалось загрузить профиль. Попробуйте ещё раз.")
+            return
+        min_amount = float(await get_setting("min_withdrawal") or 0.2)
+        if float(user.get("balance", 0) or 0) < min_amount:
+            await message.answer(f"❌ Минимальная сумма для вывода: {min_amount:.3f} $")
+            return
+        await message.answer(
+            "<tg-emoji emoji-id='5456348576214983692'>💰</tg-emoji> "
+            "Введите сумму для вывода USDT "
+            f"(доступно: {float(user.get('balance', 0) or 0):.3f} $):",
+            parse_mode="HTML",
+        )
+        await state.set_state(WithdrawalStates.waiting_for_amount)
+        return
+
+    if action == "withdraw_stars":
+        try:
+            stars_amount = int(payload.get("stars") or 0)
+        except (TypeError, ValueError):
+            stars_amount = 0
+        if not 15 <= stars_amount <= 1000:
+            await message.answer("❌ Выберите от 15 до 1000 звёзд.")
+            return
+
+        usd_amount = round(stars_amount * 0.017, 6)
+        if not await _withdrawal_subscriptions_ok(user_id):
+            await _notify_withdrawal_subscription_required(message)
+            await message.answer("Для вывода подпишитесь на канал и вступите в чат.")
+            return
+
+        user = await get_user(user_id)
+        if not user:
+            await message.answer("❌ Не удалось загрузить профиль. Попробуйте ещё раз.")
+            return
+        if float(user.get("balance", 0) or 0) + 1e-9 < usd_amount:
+            await message.answer(
+                f"❌ Недостаточно средств: для {stars_amount} ⭐ нужно {usd_amount:.3f} $."
+            )
+            return
+
+        changed = await update_user_balance(user_id, amount=-usd_amount)
+        if changed is False:
+            await message.answer("❌ Не удалось списать средства. Попробуйте ещё раз.")
+            return
+
+        withdrawal_id = await create_withdrawal_request(
+            user_id=user_id,
+            amount=usd_amount,
+            payout_method="stars",
+            stars_amount=stars_amount,
+        )
+        await message.answer(
+            "<tg-emoji emoji-id='5458870142924526130'>📨</tg-emoji> "
+            "<b>Заявка на вывод Stars отправлена!</b>\n\n"
+            f"Количество: <b>{stars_amount} ⭐</b>\n"
+            f"Списано с баланса: <b>{usd_amount:.3f} $</b>\n\n"
+            "Ожидайте решения администрации.",
+            parse_mode="HTML",
+        )
+        await send_withdraw_request_to_admins(withdrawal_id)
+        return
+
+    await message.answer("❌ Неизвестное действие Mini App.")
 
 
 # ============================================================
