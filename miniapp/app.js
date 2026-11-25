@@ -494,26 +494,75 @@ function openCaseDetail(caseId) {
   body.appendChild(result);
 }
 
+function startPrizeReel(prizes, finalStars, onDone) {
+  const win = $("reel-window");
+  const track = $("reel-track");
+  if (!win || !track) { onDone(); return; }
+
+  win.classList.remove("hidden");
+  track.innerHTML = "";
+  const pool = prizes && prizes.length ? prizes.map(item => Number(item.stars || 0)) : [Number(finalStars || 0)];
+  const values = [];
+  for (let i = 0; i < 22; i++) {
+    values.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  const finalIndex = values.length;
+  values.push(Number(finalStars || 0));
+  values.push(Number(finalStars || 0), Number(finalStars || 0));
+
+  values.forEach((value, index) => {
+    const row = document.createElement("div");
+    row.className = "reel-item" + (index === finalIndex ? " final" : "");
+    row.textContent = Number(value).toFixed(2) + " ⭐";
+    track.appendChild(row);
+  });
+
+  const rowHeight = 60;
+  track.style.transition = "none";
+  track.style.transform = "translateY(0px)";
+  setTimeout(() => {
+    track.style.transition = "transform 2.3s cubic-bezier(.12,.72,.16,1)";
+    track.style.transform = "translateY(-" + ((finalIndex - 1) * rowHeight) + "px)";
+  }, 30);
+  setTimeout(() => {
+    win.classList.add("finish");
+    onDone();
+  }, 2450);
+}
+
 async function openCase(caseId, button, resultId) {
   const overlay = $("case-open-overlay");
   const visualBox = $("opening-visual");
   const prizeBox = $("opening-prize");
   const codeBox = $("opening-code");
   const closeBtn = $("opening-close");
+  const reelWindow = $("reel-window");
+  const reelTrack = $("reel-track");
   if (!overlay || !visualBox || !prizeBox || !codeBox) return;
 
   button.disabled = true;
   prizeBox.textContent = "";
   prizeBox.classList.add("hidden");
   codeBox.textContent = "Открываем…";
+  if (reelWindow) {
+    reelWindow.classList.add("hidden");
+    reelWindow.classList.remove("finish");
+  }
+  if (reelTrack) reelTrack.innerHTML = "";
   visualBox.innerHTML = "";
   const visual = makeCaseVisual(caseId, "cv-xl");
   visualBox.appendChild(visual);
   overlay.classList.remove("hidden");
+  closeBtn.onclick = () => {
+    overlay.classList.add("hidden");
+    visual.classList.remove("case-opening");
+  };
   setTimeout(() => visual.classList.add("case-opening"), 40);
 
+  const item = (cases || []).find(entry => entry.id === caseId);
+  const prizes = item ? item.prizes : [];
+
   const showResult = result => {
-    visual.classList.remove("case-opening");
     prizeBox.textContent = "+" + Number(result.prize_stars || 0).toFixed(2) + " ⭐";
     prizeBox.classList.remove("hidden");
     codeBox.textContent = usd(result.prize_usd) + " · код раунда " + result.code;
@@ -530,7 +579,10 @@ async function openCase(caseId, button, resultId) {
       resultBox.appendChild(title);
       resultBox.appendChild(detail);
     }
-    closeBtn.onclick = () => overlay.classList.add("hidden");
+    closeBtn.onclick = () => {
+      overlay.classList.add("hidden");
+      visual.classList.remove("case-opening");
+    };
   };
 
   try {
@@ -539,9 +591,9 @@ async function openCase(caseId, button, resultId) {
         method: "POST",
         body: JSON.stringify({ case_id: caseId }),
       }),
-      new Promise(resolve => setTimeout(resolve, 1100)),
+      new Promise(resolve => setTimeout(resolve, 700)),
     ]);
-    showResult(result);
+    startPrizeReel(prizes, result.prize_stars, () => showResult(result));
     toast(result.message || "Кейс открыт");
     api("/profile").then(renderProfile).catch(() => {});
     api("/history").then(renderHistory).catch(() => {});
