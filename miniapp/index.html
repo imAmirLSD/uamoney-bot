@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0a1020">
   <title>UA. Mini App</title>
-  <link rel="stylesheet" href="style.css?v=20261125u">
+  <link rel="stylesheet" href="style.css?v=20261125v">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -18,12 +18,18 @@
   <main class="content">
     <!-- ГЛАВНАЯ -->
     <section class="tab active" id="tab-home">
-      <div class="card season-card" id="home-season-art" role="img" aria-label="Моника Пасс · сезон 1">
-        <span class="sr-only" id="home-season-name">Игрок · сезон 1</span>
-        <span class="sr-only" id="season-level">Уровень 0</span>
-        <span class="sr-only" id="season-today">Сегодня 0 из 3</span>
-        <span class="sr-only" id="season-exp">до 1-го — 60 опыта</span>
-        <div class="hidden"><div class="progress-fill" id="season-progress-fill"></div></div>
+      <div class="card season-card" id="home-season-art">
+        <div class="season-top">
+          <div class="season-copy">
+            <div class="season-name" id="home-season-name">Игрок · сезон 1</div>
+            <div class="season-progress">
+              <span id="season-today">Сегодня 0 из 3</span>
+              <span id="season-exp">до 1-го — 60 опыта</span>
+            </div>
+          </div>
+          <div class="season-chip" id="season-level">Уровень 0</div>
+        </div>
+        <div class="progress"><div class="progress-fill" id="season-progress-fill"></div></div>
       </div>
 
       <div class="menu-grid">
@@ -54,6 +60,14 @@
           </button>
         </div>
         <div class="menu-col">
+          <button class="menu-tile tile-daily" data-go="daily" aria-label="Сундук дня">
+            <span class="tile-icon">🎁</span>
+            <span class="tile-body">
+              <span class="tile-label">Сундук дня</span>
+              <span class="tile-headline">Серия 7 дней</span>
+              <span class="tile-sub">до 0,50 $ за день</span>
+            </span>
+          </button>
           <button class="menu-tile tile-mines" data-go="mines" aria-label="88 Мины">
             <span class="tile-icon">💣</span>
             <span class="tile-body">
@@ -286,6 +300,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20261125u"></script>
+<script src="app.js?v=20261125v"></script>
 </body>
 </html>

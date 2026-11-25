@@ -1183,6 +1183,10 @@ document.querySelectorAll("[data-go]").forEach(el => {
       openCasesScreen();
       return;
     }
+    if (go === "daily") {
+      showLegacy("daily-home-card");
+      return;
+    }
     if (go === "roulette" || go === "mines" || go === "starfield") {
       showLegacy(go === "roulette" ? "roulette-section" : "starfield-section");
       return;
