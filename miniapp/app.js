@@ -265,10 +265,6 @@ function makeCaseVisual(caseId, size) {
   const wrap = document.createElement("div");
   wrap.className = "case-visual case-" + caseId + " " + (size || "cv-small");
 
-  const glow = document.createElement("div");
-  glow.className = "cv-glow";
-  const rays = document.createElement("div");
-  rays.className = "cv-rays";
   const body = document.createElement("div");
   body.className = "cv-body";
   const lid = document.createElement("div");
@@ -276,8 +272,6 @@ function makeCaseVisual(caseId, size) {
   const lock = document.createElement("div");
   lock.className = "cv-lock";
 
-  wrap.appendChild(glow);
-  wrap.appendChild(rays);
   wrap.appendChild(body);
   wrap.appendChild(lid);
   wrap.appendChild(lock);
@@ -289,7 +283,7 @@ function makeCaseVisual(caseId, size) {
     const distance = 55 + Math.random() * 45;
     spark.style.setProperty("--sx", Math.cos(angle) * distance + "px");
     spark.style.setProperty("--sy", Math.sin(angle) * distance + "px");
-    spark.style.animationDelay = (Math.random() * 0.25).toFixed(2) + "s";
+    spark.style.animationDelay = (Math.random() * 0.4).toFixed(2) + "s";
     wrap.appendChild(spark);
   }
   return wrap;
@@ -521,13 +515,13 @@ function startPrizeReel(prizes, finalStars, onDone) {
   track.style.transition = "none";
   track.style.transform = "translateY(0px)";
   setTimeout(() => {
-    track.style.transition = "transform 2.3s cubic-bezier(.12,.72,.16,1)";
+    track.style.transition = "transform 3s cubic-bezier(.12,.72,.16,1)";
     track.style.transform = "translateY(-" + ((finalIndex - 1) * rowHeight) + "px)";
   }, 30);
   setTimeout(() => {
     win.classList.add("finish");
     onDone();
-  }, 2450);
+  }, 3200);
 }
 
 async function openCase(caseId, button, resultId) {
@@ -591,7 +585,7 @@ async function openCase(caseId, button, resultId) {
         method: "POST",
         body: JSON.stringify({ case_id: caseId }),
       }),
-      new Promise(resolve => setTimeout(resolve, 700)),
+      new Promise(resolve => setTimeout(resolve, 1000)),
     ]);
     startPrizeReel(prizes, result.prize_stars, () => showResult(result));
     toast(result.message || "Кейс открыт");
