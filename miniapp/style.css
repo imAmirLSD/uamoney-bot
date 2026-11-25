@@ -355,3 +355,25 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   border-radius: 999px;
   background: linear-gradient(90deg, #8b5cf6, #f59e0b);
 }
+
+.day-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 10px 0;
+}
+
+.day-chip {
+  padding: 6px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.day-chip.done {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(245, 158, 11, 0.3));
+  color: #fde68a;
+}

@@ -10,6 +10,7 @@ let profile = null;
 let cases = [];
 let roulette = null;
 let starfield = null;
+let daily = null;
 let selectedStars = 50;
 let withdrawMethod = "stars";
 
@@ -198,6 +199,56 @@ function renderHistory(data) {
     row.appendChild(amount);
     list.appendChild(row);
   });
+}
+
+function renderDaily(data) {
+  daily = data;
+  setText("daily-streak", "серия " + Number(data.streak || 0));
+  setText(
+    "daily-progress",
+    Number(data.completed_today || 0) + " из " + Number(data.goal || 3) + " заданий сегодня"
+  );
+  const strip = $("daily-days");
+  if (strip) {
+    strip.innerHTML = "";
+    (data.days || []).forEach(day => {
+      const chip = document.createElement("div");
+      chip.className = "day-chip" + (day.claimed ? " done" : "");
+      chip.textContent = Number(day.day) + " день";
+      strip.appendChild(chip);
+    });
+  }
+  const reward = data.today_reward || {};
+  setText(
+    "daily-reward",
+    "Что внутри сегодня: " + Number(reward.usd || 0).toFixed(2) + " $ · " +
+      usd(reward.usd) + " ≈ " + Number(reward.stars || 0).toFixed(2) + " ⭐"
+  );
+  const btn = $("daily-claim");
+  if (btn) {
+    btn.disabled = !data.unlocked || Boolean(data.claimed_today);
+    btn.textContent = data.claimed_today
+      ? "Уже открыт сегодня"
+      : data.unlocked
+        ? "Открыть сундук"
+        : "Нужно " + Number(data.goal || 3) + " задания";
+    btn.onclick = claimDaily;
+  }
+}
+
+async function claimDaily() {
+  const btn = $("daily-claim");
+  if (btn) btn.disabled = true;
+  try {
+    const result = await api("/daily/claim", { method: "POST", body: "{}" });
+    toast(result.message || "Сундук открыт");
+    api("/daily").then(renderDaily).catch(() => {});
+    api("/profile").then(renderProfile).catch(() => {});
+    api("/history").then(renderHistory).catch(() => {});
+  } catch (error) {
+    toast(error.message);
+    if (btn) btn.disabled = false;
+  }
 }
 
 function renderCases(data) {
@@ -719,6 +770,9 @@ api("/history")
 api("/cases")
   .then(renderCases)
   .catch(error => toast("Не удалось загрузить кейсы: " + error.message));
+api("/daily")
+  .then(renderDaily)
+  .catch(error => toast("Не удалось загрузить сундук: " + error.message));
 api("/roulette")
   .then(renderRoulette)
   .catch(error => toast("Не удалось загрузить рулетку: " + error.message));

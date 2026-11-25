@@ -7,6 +7,7 @@ Nginx проксирует /miniapi/ на этот сервер.
 import hashlib
 import hmac
 import math
+from datetime import datetime, timedelta, timezone
 import json
 import os
 import re
@@ -951,6 +952,182 @@ async def miniapp_starfield_cashout(request: web.Request) -> web.Response:
     )
 
 
+DAILY_TASK_GOAL = 3
+DAILY_REWARDS = (0.05, 0.08, 0.12, 0.18, 0.25, 0.35, 0.50)
+DAILY_TZ = timezone(timedelta(hours=3))
+
+
+def _daily_today() -> str:
+    return datetime.now(DAILY_TZ).date().isoformat()
+
+
+def _daily_yesterday() -> str:
+    return (datetime.now(DAILY_TZ).date() - timedelta(days=1)).isoformat()
+
+
+def _daily_code(user_id: int, day: str, streak: int) -> str:
+    key = hmac.new(
+        core.BOT_TOKEN.encode("utf-8"), b"miniapp-daily-chest", hashlib.sha256
+    ).digest()
+    message = f"{user_id}:{day}:{streak}".encode("utf-8")
+    return hmac.new(key, message, hashlib.sha256).hexdigest()[:10].upper()
+
+
+def _daily_reward(streak: int) -> dict:
+    usd = DAILY_REWARDS[max(0, min(streak, 7)) - 1] if streak else 0
+    return {"usd": usd, "stars": round(usd / STAR_USD, 2)}
+
+
+async def _ensure_daily_schema() -> None:
+    async with aiosqlite.connect("bot_database.db") as db:
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS miniapp_daily_streak (
+                user_id INTEGER PRIMARY KEY,
+                streak INTEGER NOT NULL DEFAULT 0,
+                last_day TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS miniapp_daily_claims (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                day TEXT NOT NULL,
+                streak INTEGER NOT NULL,
+                reward_usd REAL NOT NULL,
+                reward_stars REAL NOT NULL,
+                code TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, day)
+            )
+            """
+        )
+        await db.commit()
+
+
+async def _daily_completed_today(db, user_id: int) -> int:
+    statuses = list(DONE_STATUSES)
+    marks = ",".join("?" for _ in statuses)
+    today = _daily_today()
+    async with db.execute(
+        f"SELECT COUNT(*) AS n FROM completed_tasks "
+        f"WHERE user_id=? AND date(completed_at, '+3 hours')=? AND status IN ({marks})",
+        (user_id, today, *statuses),
+    ) as cursor:
+        row = await cursor.fetchone()
+    return int(row["n"] if row else 0)
+
+
+async def _daily_state(db, user_id: int) -> dict:
+    today = _daily_today()
+    yesterday = _daily_yesterday()
+    async with db.execute(
+        "SELECT streak, last_day FROM miniapp_daily_streak WHERE user_id=?", (user_id,)
+    ) as cursor:
+        row = await cursor.fetchone()
+    if not row:
+        streak, last_day = 0, ""
+    else:
+        streak, last_day = int(row["streak"]), row["last_day"]
+    if last_day not in (today, yesterday):
+        streak = 0
+    completed = await _daily_completed_today(db, user_id)
+    claimed_today = last_day == today
+    return {
+        "goal": DAILY_TASK_GOAL,
+        "completed_today": completed,
+        "unlocked": completed >= DAILY_TASK_GOAL,
+        "streak": streak,
+        "next_streak": min(7, streak + 1) if not claimed_today else streak,
+        "claimed_today": claimed_today,
+        "today": today,
+        "days": [
+            {**_daily_reward(i), "day": i, "claimed": i <= streak}
+            for i in range(1, 8)
+        ],
+        "today_reward": _daily_reward(min(7, streak + 1) if not claimed_today else streak),
+    }
+
+
+async def miniapp_daily(request: web.Request) -> web.Response:
+    user_id = await _identity(request)
+    await _ensure_daily_schema()
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        state = await _daily_state(db, user_id)
+    return web.json_response({
+        **state,
+        "message": "Заходи каждый день: серия растёт до 7 дней, и сундук с ней.",
+    })
+
+
+async def miniapp_daily_claim(request: web.Request) -> web.Response:
+    user_id = await _identity(request)
+    await _ensure_daily_schema()
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        state = await _daily_state(db, user_id)
+        if state["claimed_today"]:
+            await db.rollback()
+            return web.json_response({"ok": False, "error": "Сундук уже открыт сегодня"}, status=400)
+        if not state["unlocked"]:
+            await db.rollback()
+            return web.json_response(
+                {
+                    "ok": False,
+                    "error": f"Нужно {DAILY_TASK_GOAL} задания сегодня. Сделано: {state['completed_today']}",
+                },
+                status=400,
+            )
+
+        streak = state["next_streak"]
+        reward = _daily_reward(streak)
+        code = _daily_code(user_id, state["today"], streak)
+        await db.execute(
+            "INSERT INTO miniapp_daily_streak (user_id, streak, last_day) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET streak=excluded.streak, last_day=excluded.last_day",
+            (user_id, streak, state["today"]),
+        )
+        await db.execute(
+            "INSERT INTO miniapp_daily_claims "
+            "(user_id, day, streak, reward_usd, reward_stars, code) VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, state["today"], streak, reward["usd"], reward["stars"], code),
+        )
+        await db.execute(
+            "UPDATE users SET balance = balance + ?, "
+            "lifetime_earned = COALESCE(lifetime_earned, 0) + ? WHERE user_id = ?",
+            (reward["usd"], reward["usd"], user_id),
+        )
+        await db.execute(
+            "INSERT INTO balance_history (user_id, amount, type, reason) VALUES (?, ?, ?, ?)",
+            (
+                user_id,
+                reward["usd"],
+                "daily_chest",
+                f"Сундук дня · день {streak} · код {code}",
+            ),
+        )
+        await db.commit()
+
+    balance_row = await get_user(user_id)
+    balance = float(balance_row.get("balance", 0) or 0) if balance_row else 0
+    return web.json_response(
+        {
+            "ok": True,
+            "streak": streak,
+            "reward_usd": reward["usd"],
+            "reward_stars": reward["stars"],
+            "code": code,
+            "balance_usd": round(balance, 6),
+            "balance_stars": round(balance / STAR_USD, 2),
+            "message": f"День {streak} · +{reward['stars']} ⭐ · код {code}",
+        }
+    )
+
+
 async def miniapp_history(request: web.Request) -> web.Response:
     user_id = await _identity(request)
     items = []
@@ -1101,6 +1278,24 @@ async def miniapp_history(request: web.Request) -> web.Response:
                             _history_date(row["created_at"]) + " · код " + row["code"],
                             amount,
                             status,
+                            row["created_at"],
+                        ))
+            except Exception:
+                pass
+
+            try:
+                async with db.execute(
+                    "SELECT streak, reward_usd, reward_stars, code, created_at "
+                    "FROM miniapp_daily_claims WHERE user_id=? ORDER BY id DESC LIMIT 10",
+                    (user_id,),
+                ) as cursor:
+                    for row in await cursor.fetchall():
+                        items.append(_history_item(
+                            f"daily_{row['code']}",
+                            f"Сундук дня · день {row['streak']}",
+                            _history_date(row["created_at"]) + " · код " + row["code"],
+                            row["reward_usd"],
+                            f"+{row['reward_stars']} ⭐",
                             row["created_at"],
                         ))
             except Exception:
@@ -1289,3 +1484,5 @@ def register_routes(app: web.Application) -> None:
     app.router.add_post("/miniapi/starfield/start", miniapp_starfield_start)
     app.router.add_post("/miniapi/starfield/open", miniapp_starfield_open)
     app.router.add_post("/miniapi/starfield/cashout", miniapp_starfield_cashout)
+    app.router.add_get("/miniapi/daily", miniapp_daily)
+    app.router.add_post("/miniapi/daily/claim", miniapp_daily_claim)

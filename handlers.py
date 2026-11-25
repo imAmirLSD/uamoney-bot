@@ -1838,7 +1838,7 @@ async def show_cabinet(message: types.Message, state: FSMContext):
         callback_data="daily_bonus",
         icon_custom_emoji_id="5458870142924526130",
     )
-    miniapp_url = getattr(core, "MINIAPP_URL", "https://uamoneybots.ru/miniapp/?v=20261125e")
+    miniapp_url = getattr(core, "MINIAPP_URL", "https://uamoneybots.ru/miniapp/?v=20261125f")
     if WebAppInfo is not None and user_id in ADMIN_IDS:
         keyboard.button(text="🌐 Mini App", web_app=WebAppInfo(url=miniapp_url))
         keyboard.adjust(2, 1, 1)
@@ -6190,7 +6190,7 @@ async def cmd_miniapp(message: types.Message):
     if WebAppInfo is None:
         await message.answer("Mini App недоступен на этой версии aiogram.")
         return
-    url = getattr(core, "MINIAPP_URL", "https://uamoneybots.ru/miniapp/?v=20261125e")
+    url = getattr(core, "MINIAPP_URL", "https://uamoneybots.ru/miniapp/?v=20261125f")
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[[
             InlineKeyboardButton(text="🌐 Открыть Mini App", web_app=WebAppInfo(url=url))
