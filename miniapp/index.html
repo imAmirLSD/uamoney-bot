@@ -3,135 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0a1020">
+  <meta name="theme-color" content="#0d0f16">
   <title>UA. Mini App</title>
-  <link rel="stylesheet" href="style.css?v=20261125za">
+  <link rel="stylesheet" href="style.css?v=20261125o">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-<svg class="svg-sprite" width="0" height="0" aria-hidden="true" focusable="false">
-  <defs>
-    <linearGradient id="tileBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#000721"/><stop offset="0.55" stop-color="#010411"/><stop offset="1" stop-color="#00030d"/>
-    </linearGradient>
-    <radialGradient id="tileBlue" cx="0.2" cy="0.35" r="0.85">
-      <stop offset="0" stop-color="#01186d" stop-opacity="0.9"/><stop offset="0.6" stop-color="#000721" stop-opacity="0.3"/><stop offset="1" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="tileNeon" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#9fe0da"/><stop offset="0.5" stop-color="#004ce9"/><stop offset="1" stop-color="#01186d"/>
-    </linearGradient>
-    <linearGradient id="tileGold" x1="0" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#fff8d0"/><stop offset="0.5" stop-color="#fef0b1"/><stop offset="1" stop-color="#c99b36"/>
-    </linearGradient>
-    <radialGradient id="tileGoldGlow">
-      <stop offset="0" stop-color="#fef0b1" stop-opacity="0.8"/><stop offset="0.5" stop-color="#c99b36" stop-opacity="0.3"/><stop offset="1" stop-color="#c99b36" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="tileShade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#000513" stop-opacity="0"/><stop offset="0.35" stop-color="#000513" stop-opacity="0.72"/><stop offset="1" stop-color="#00030d" stop-opacity="0.94"/>
-    </linearGradient>
-    <filter id="tileGlow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="tileSoft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="26"/></filter>
-  </defs>
-
-  <symbol id="tile-frame" viewBox="0 0 520 400">
-    <rect width="520" height="400" fill="url(#tileBg)"/>
-    <rect width="520" height="400" fill="url(#tileBlue)"/>
-    <g filter="url(#tileGlow)" opacity="0.95">
-      <rect x="7" y="7" width="506" height="386" rx="34" fill="none" stroke="#004ce9" stroke-width="5"/>
-    </g>
-    <rect x="7" y="7" width="506" height="386" rx="34" fill="none" stroke="url(#tileNeon)" stroke-width="1.6"/>
-    <rect x="17" y="17" width="486" height="366" rx="26" fill="none" stroke="#01186d" stroke-width="1" opacity="0.7"/>
-  </symbol>
-
-  <symbol id="art-cases" viewBox="0 0 520 400">
-    <g transform="translate(260 158)">
-      <ellipse cy="100" rx="126" ry="24" fill="#004ce9" opacity="0.35" filter="url(#tileSoft)"/>
-      <g filter="url(#tileGlow)">
-        <rect x="-102" y="6" width="204" height="96" rx="13" fill="#1b2446" stroke="url(#tileGold)" stroke-width="4"/>
-        <path d="M-102 14 Q-102 -56 0 -56 Q102 -56 102 14 Z" fill="#232f54" stroke="url(#tileGold)" stroke-width="4"/>
-        <rect x="-20" y="16" width="40" height="44" rx="7" fill="url(#tileGold)"/>
-      </g>
-      <g fill="url(#tileGold)">
-        <path d="M-78 -78 L-72 -60 L-54 -54 L-72 -48 L-78 -30 L-84 -48 L-102 -54 L-84 -60 Z"/>
-        <path d="M74 -92 L79 -76 L95 -71 L79 -66 L74 -50 L69 -66 L53 -71 L69 -76 Z"/>
-        <path d="M12 -108 L16 -96 L28 -92 L16 -88 L12 -76 L8 -88 L-4 -92 L8 -96 Z"/>
-      </g>
-    </g>
-  </symbol>
-
-  <symbol id="art-roulette" viewBox="0 0 520 400">
-    <g transform="translate(260 160)">
-      <circle r="104" fill="url(#tileGoldGlow)" filter="url(#tileSoft)"/>
-      <circle r="82" fill="#000721" stroke="url(#tileGold)" stroke-width="5" filter="url(#tileGlow)"/>
-      <g stroke="#fef0b1" stroke-width="2.5" opacity="0.75">
-        <path d="M0 -78 L0 78 M-78 0 L78 0 M-55 -55 L55 55 M55 -55 L-55 55"/>
-      </g>
-      <g fill="url(#tileGold)" opacity="0.85">
-        <circle cx="0" cy="-46" r="8"/><circle cx="46" cy="0" r="8"/><circle cx="0" cy="46" r="8"/><circle cx="-46" cy="0" r="8"/>
-      </g>
-      <circle r="20" fill="url(#tileGold)" filter="url(#tileGlow)"/>
-      <path d="M0 -118 L-14 -88 L14 -88 Z" fill="#fff8d0"/>
-    </g>
-  </symbol>
-
-  <symbol id="art-withdraw" viewBox="0 0 520 400">
-    <g transform="translate(260 162)">
-      <circle r="104" fill="url(#tileGoldGlow)" filter="url(#tileSoft)"/>
-      <g fill="url(#tileGold)" filter="url(#tileGlow)">
-        <ellipse cy="76" rx="74" ry="19"/><ellipse cy="48" rx="74" ry="19"/><ellipse cy="20" rx="74" ry="19"/>
-      </g>
-      <path d="M0 -104 L38 -58 L16 -58 L16 8 L-16 8 L-16 -58 L-38 -58 Z" fill="url(#tileGold)" filter="url(#tileGlow)"/>
-      <g fill="#fff8d0">
-        <path d="M-74 -36 L-69 -20 L-53 -15 L-69 -10 L-74 6 L-79 -10 L-95 -15 L-79 -20 Z"/>
-        <path d="M76 -12 L80 0 L92 4 L80 8 L76 20 L72 8 L60 4 L72 0 Z"/>
-      </g>
-    </g>
-  </symbol>
-
-  <symbol id="art-daily" viewBox="0 0 520 400">
-    <g transform="translate(260 160)">
-      <circle r="104" fill="url(#tileGoldGlow)" filter="url(#tileSoft)"/>
-      <g fill="url(#tileGold)">
-        <circle cx="-78" cy="-52" r="6"/><circle cx="-52" cy="-80" r="6"/><circle cx="-18" cy="-96" r="6"/>
-        <circle cx="18" cy="-96" r="6"/><circle cx="52" cy="-80" r="6"/><circle cx="78" cy="-52" r="6"/><circle cx="90" cy="-20" r="6"/>
-      </g>
-      <g filter="url(#tileGlow)">
-        <rect x="-90" y="-6" width="180" height="92" rx="12" fill="#1b2446" stroke="url(#tileGold)" stroke-width="4"/>
-        <path d="M-90 -2 Q-90 -58 0 -58 Q90 -58 90 -2 Z" fill="#232f54" stroke="url(#tileGold)" stroke-width="4"/>
-        <rect x="-17" y="4" width="34" height="40" rx="6" fill="url(#tileGold)"/>
-      </g>
-    </g>
-  </symbol>
-
-  <symbol id="art-mines" viewBox="0 0 520 400">
-    <g transform="translate(260 164)">
-      <ellipse cy="62" rx="132" ry="90" fill="#004ce9" opacity="0.2" filter="url(#tileSoft)"/>
-      <g fill="#0b1430" stroke="url(#tileNeon)" stroke-width="2" opacity="0.95">
-        <circle cx="-108" cy="-50" r="15"/><circle cx="-54" cy="-50" r="15"/><circle cx="0" cy="-50" r="15"/><circle cx="54" cy="-50" r="15"/><circle cx="108" cy="-50" r="15"/>
-        <circle cx="-108" cy="0" r="15"/><circle cx="-54" cy="0" r="15"/><circle cx="54" cy="0" r="15"/><circle cx="108" cy="0" r="15"/>
-        <circle cx="-108" cy="50" r="15"/><circle cx="-54" cy="50" r="15"/><circle cx="0" cy="50" r="15"/><circle cx="54" cy="50" r="15"/><circle cx="108" cy="50" r="15"/>
-      </g>
-      <circle cx="0" cy="0" r="21" fill="url(#tileGold)" filter="url(#tileGlow)"/>
-      <path d="M0 -34 L5 -22 L18 -18 L5 -14 L0 -2 L-5 -14 L-18 -18 L-5 -22 Z" fill="#fff8d0"/>
-    </g>
-  </symbol>
-
-  <symbol id="art-starfield" viewBox="0 0 520 400">
-    <g transform="translate(260 160)">
-      <circle r="112" fill="url(#tileGoldGlow)" filter="url(#tileSoft)"/>
-      <g fill="url(#tileGold)" opacity="0.75">
-        <path d="M-104 -46 L-99 -32 L-85 -27 L-99 -22 L-104 -8 L-109 -22 L-123 -27 L-109 -32 Z"/>
-        <path d="M96 -62 L100 -49 L113 -45 L100 -41 L96 -28 L92 -41 L79 -45 L92 -49 Z"/>
-        <circle cx="-60" cy="52" r="4"/><circle cx="70" cy="46" r="4"/><circle cx="-30" cy="-82" r="3"/><circle cx="42" cy="76" r="3"/>
-      </g>
-      <path d="M0 -92 L22 -26 L90 -22 L36 18 L54 84 L0 46 L-54 84 L-36 18 L-90 -22 L-22 -26 Z" fill="url(#tileGold)" filter="url(#tileGlow)"/>
-      <circle r="20" fill="#fff8d0" opacity="0.85"/>
-    </g>
-  </symbol>
-</svg>
-
 <div class="app">
   <header class="topbar">
     <div class="brand"><span class="brand-dot"></span> UA. <span class="brand-muted">mini</span></div>
@@ -141,152 +18,58 @@
   <main class="content">
     <!-- ГЛАВНАЯ -->
     <section class="tab active" id="tab-home">
-      <div class="pass-panel" id="home-season-art" role="button" tabindex="0" aria-label="ПАСС — открыть уровни">
-        <svg class="pass-art" viewBox="0 0 2066 761" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <defs>
-            <linearGradient id="passBg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#000721"/>
-              <stop offset="0.55" stop-color="#010411"/>
-              <stop offset="1" stop-color="#00030d"/>
-            </linearGradient>
-            <radialGradient id="passBlue" cx="0.16" cy="0.45" r="0.78">
-              <stop offset="0" stop-color="#01186d" stop-opacity="0.9"/>
-              <stop offset="0.55" stop-color="#000721" stop-opacity="0.35"/>
-              <stop offset="1" stop-color="#000000" stop-opacity="0"/>
-            </radialGradient>
-            <radialGradient id="passGoldGlow">
-              <stop offset="0" stop-color="#fef0b1" stop-opacity="0.85"/>
-              <stop offset="0.45" stop-color="#c99b36" stop-opacity="0.35"/>
-              <stop offset="1" stop-color="#c99b36" stop-opacity="0"/>
-            </radialGradient>
-            <linearGradient id="passGold" x1="0" y1="0" x2="0.8" y2="1">
-              <stop offset="0" stop-color="#fff8d0"/>
-              <stop offset="0.5" stop-color="#fef0b1"/>
-              <stop offset="1" stop-color="#c99b36"/>
-            </linearGradient>
-            <linearGradient id="passNeon" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#9fe0da"/>
-              <stop offset="0.5" stop-color="#004ce9"/>
-              <stop offset="1" stop-color="#01186d"/>
-            </linearGradient>
-            <filter id="passGlow" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="16" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <filter id="passSoft" x="-70%" y="-70%" width="240%" height="240%">
-              <feGaussianBlur stdDeviation="42"/>
-            </filter>
-          </defs>
-
-          <rect width="2066" height="761" fill="url(#passBg)"/>
-          <rect width="2066" height="761" fill="url(#passBlue)"/>
-
-          <g filter="url(#passGlow)" opacity="0.95">
-            <rect x="14" y="14" width="2038" height="733" rx="52" fill="none" stroke="#004ce9" stroke-width="10"/>
-          </g>
-          <rect x="14" y="14" width="2038" height="733" rx="52" fill="none" stroke="url(#passNeon)" stroke-width="3"/>
-          <rect x="32" y="32" width="2002" height="697" rx="42" fill="none" stroke="#01186d" stroke-width="1.5" opacity="0.75"/>
-
-          <g transform="translate(1770 355)">
-            <circle r="270" fill="url(#passGoldGlow)" filter="url(#passSoft)"/>
-            <path d="M0 -212 L152 -78 L112 172 L0 244 L-112 172 L-152 -78 Z" fill="url(#passGold)" opacity="0.96"/>
-            <path d="M0 -158 L108 -54 L80 122 L0 178 L-80 122 L-108 -54 Z" fill="#fff8d0" opacity="0.45"/>
-            <path d="M0 -112 L24 -30 L104 0 L24 30 L0 112 L-24 30 L-104 0 L-24 -30 Z" fill="#fef0b1" filter="url(#passGlow)" opacity="0.95"/>
-            <path d="M-64 66 L-24 30 L0 112 Z" fill="#c96a3a" opacity="0.55"/>
-            <path d="M64 66 L24 30 L0 112 Z" fill="#c96a3a" opacity="0.35"/>
-          </g>
-          <g fill="#fef0b1" opacity="0.9">
-            <path d="M1490 132 L1498 158 L1524 166 L1498 174 L1490 200 L1482 174 L1456 166 L1482 158 Z"/>
-            <path d="M1992 548 L1998 566 L2016 572 L1998 578 L1992 596 L1986 578 L1968 572 L1986 566 Z"/>
-            <circle cx="1540" cy="560" r="5" opacity="0.7"/>
-            <circle cx="1955" cy="150" r="4" opacity="0.65"/>
-          </g>
-
-          <g fill="#9fe0da" opacity="0.95">
-            <circle cx="222" cy="265" r="17"/>
-            <circle cx="276" cy="265" r="17"/>
-          </g>
-          <text class="pass-title" x="375" y="297">ПАСС</text>
-          <text class="pass-level" x="139" y="506">Уровень <tspan id="pass-level-num">0</tspan></text>
-        </svg>
-        <div class="hidden">
-          <span id="home-season-name">Игрок · сезон 1</span>
-          <span id="season-level">Уровень 0</span>
+      <div class="card season-card">
+        <div class="season-top">
+          <div class="season-name" id="home-season-name">Игрок · сезон 1</div>
+          <div class="season-chip" id="season-level">Уровень 0</div>
+        </div>
+        <div class="season-progress">
           <span id="season-today">Сегодня 0 из 3</span>
           <span id="season-exp">до 1-го — 60 опыта</span>
-          <div class="progress-fill" id="season-progress-fill"></div>
         </div>
+        <div class="progress"><div class="progress-fill" id="season-progress-fill"></div></div>
+      </div>
+
+      <div class="promo-card" id="promo-card">
+        <div class="promo-title" id="promo-title">Звёзды — в деньги. Деньги — в звёзды.</div>
+        <div class="promo-sub" id="promo-sub">Открывай кейсы от 2,5⭐ · главный приз 500⭐</div>
       </div>
 
       <div class="menu-grid">
         <div class="menu-col">
-          <button class="menu-tile" data-go="cases" aria-label="КЕЙСЫ">
-            <svg class="tile-art" viewBox="0 0 520 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <use href="#tile-frame"/>
-              <use href="#art-cases"/>
-              <rect x="0" y="236" width="520" height="164" fill="url(#tileShade)"/>
-              <text class="tile-label" x="28" y="250">КЕЙСЫ</text>
-              <text class="tile-headline" x="28" y="296"><tspan x="28" dy="0">Открывай</tspan><tspan x="28" dy="36">кейсы</tspan></text>
-              <text class="tile-sub" x="28" y="358">3 кейса от 2,5⭐ · главный 500⭐</text>
-            </svg>
+          <button class="menu-tile tile-roulette" data-go="roulette">
+            <span class="tile-icon">🎡</span>
+            <span class="tile-body">
+              <span class="tile-title">Рулетка</span>
+              <span class="tile-sub">Крути колесо до x2,4 · ставки</span>
+            </span>
           </button>
-          <button class="menu-tile" data-go="roulette" aria-label="РУЛЕТКА">
-            <svg class="tile-art" viewBox="0 0 520 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <use href="#tile-frame"/>
-              <use href="#art-roulette"/>
-              <rect x="0" y="236" width="520" height="164" fill="url(#tileShade)"/>
-              <text class="tile-label" x="28" y="250">РУЛЕТКА</text>
-              <text class="tile-headline" x="28" y="296"><tspan x="28" dy="0">Крути</tspan><tspan x="28" dy="36">колесо</tspan></text>
-              <text class="tile-sub" x="28" y="358">до x2,4 · ставки от 1,25⭐</text>
-            </svg>
-          </button>
-          <button class="menu-tile" data-go="withdraw" aria-label="ВЫВОД">
-            <svg class="tile-art" viewBox="0 0 520 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <use href="#tile-frame"/>
-              <use href="#art-withdraw"/>
-              <rect x="0" y="236" width="520" height="164" fill="url(#tileShade)"/>
-              <text class="tile-label" x="28" y="250">ВЫВОД</text>
-              <text class="tile-headline" x="28" y="296"><tspan x="28" dy="0">Ещё 15⭐</tspan></text>
-              <text class="tile-sub" x="28" y="358">= 43 подписки</text>
-            </svg>
+          <button class="menu-tile tile-withdraw" data-go="withdraw">
+            <span class="tile-icon">💸</span>
+            <span class="tile-body">
+              <span class="tile-title">Вывод</span>
+              <span class="tile-sub" id="tile-withdraw-sub">Ещё 15⭐ = 43 подписки</span>
+            </span>
           </button>
         </div>
         <div class="menu-col">
-          <button class="menu-tile" data-go="daily" aria-label="СУНДУК ДНЯ">
-            <svg class="tile-art" viewBox="0 0 520 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <use href="#tile-frame"/>
-              <use href="#art-daily"/>
-              <rect x="0" y="236" width="520" height="164" fill="url(#tileShade)"/>
-              <text class="tile-label" x="28" y="250">СУНДУК ДНЯ</text>
-              <text class="tile-headline" x="28" y="296"><tspan x="28" dy="0">Серия 7 дней</tspan></text>
-              <text class="tile-sub" x="28" y="358">до 0,50 $ за день</text>
-            </svg>
+          <button class="menu-tile tile-mines" data-go="mines">
+            <span class="tile-icon">💣</span>
+            <span class="tile-body">
+              <span class="tile-title">88 Мины</span>
+              <span class="tile-sub">6 чёрных дыр · до x92</span>
+            </span>
           </button>
-          <button class="menu-tile" data-go="mines" aria-label="88 МИНЫ">
-            <svg class="tile-art" viewBox="0 0 520 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <use href="#tile-frame"/>
-              <use href="#art-mines"/>
-              <rect x="0" y="236" width="520" height="164" fill="url(#tileShade)"/>
-              <text class="tile-label" x="28" y="250">88 МИНЫ</text>
-              <text class="tile-headline" x="28" y="296"><tspan x="28" dy="0">88 Мины</tspan></text>
-              <text class="tile-sub" x="28" y="358">6 чёрных дыр · до x92</text>
-            </svg>
-          </button>
-          <button class="menu-tile" data-go="starfield" aria-label="ИГРА">
-            <svg class="tile-art" viewBox="0 0 520 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <use href="#tile-frame"/>
-              <use href="#art-starfield"/>
-              <rect x="0" y="236" width="520" height="164" fill="url(#tileShade)"/>
-              <text class="tile-label" x="28" y="250">ИГРА</text>
-              <text class="tile-headline" x="28" y="296"><tspan x="28" dy="0">Звёздное</tspan><tspan x="28" dy="36">поле</tspan></text>
-              <text class="tile-sub" x="28" y="358">до x92,00</text>
-            </svg>
+          <button class="menu-tile tile-starfield" data-go="starfield">
+            <span class="tile-icon">✨</span>
+            <span class="tile-body">
+              <span class="tile-title">Звёздное поле</span>
+              <span class="tile-sub">до x92,00</span>
+            </span>
           </button>
         </div>
       </div>
 
-      <div id="home-legacy" class="hidden">
-        <button class="wide-btn" id="legacy-back">‹ Назад на главную</button>
       <div class="card">
         <div class="section-title">Задания <span class="chip" id="home-tasks-count">0</span></div>
         <div class="sub" id="home-tasks-progress">Сделано 0 из 15 · новые через 3 ч</div>
@@ -308,7 +91,36 @@
         <button class="wide-btn" id="home-friends-invite">Позвать друзей</button>
       </div>
 
-      <div class="card" id="daily-home-card">
+      <div class="hero card">
+        <div class="hero-top">
+          <div>
+            <div class="label">Баланс для вывода</div>
+            <div class="big" id="home-balance">0.000 $</div>
+            <div class="sub" id="home-balance-stars">≈ 0.00 ⭐</div>
+          </div>
+          <div class="level-badge">
+            <span id="home-level">0</span>
+            <small>LVL</small>
+          </div>
+        </div>
+        <div class="progress"><div class="progress-fill" id="home-progress"></div></div>
+        <div class="progress-note" id="home-progress-note">До следующего уровня: 3 задания</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card stat">
+          <div class="label">Заморожено 24ч</div>
+          <div class="value" id="home-frozen">0.000 $</div>
+          <div class="sub" id="home-frozen-stars">≈ 0.00 ⭐</div>
+        </div>
+        <div class="card stat">
+          <div class="label">Выполнено заданий</div>
+          <div class="value" id="home-tasks">0</div>
+          <div class="sub">за всё время</div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="section-title">Сундук дня <span class="chip" id="daily-streak">серия 0</span></div>
         <div class="sub" id="daily-progress">0 из 3 заданий сегодня</div>
         <div class="day-strip" id="daily-days"></div>
@@ -334,7 +146,6 @@
         </div>
         <div class="case-result hidden" id="starfield-result"></div>
       </div>
-      </div>
     </section>
 
     <!-- ЗАДАНИЯ -->
@@ -347,7 +158,6 @@
       </div>
       <div id="tasks-list" class="task-list"></div>
       <button class="wide-btn" id="check-tasks">Проверить задания</button>
-      <button class="wide-btn" id="open-daily">Сундук дня · серия и награда</button>
       <div class="fineprint">Проверка пришлёт результат в чат с ботом.</div>
     </section>
 
@@ -463,41 +273,7 @@
   </div>
 </div>
 
-<div class="overlay hidden" id="levels-overlay">
-  <div class="sheet levels-sheet">
-    <div class="sheet-head">
-      <button id="levels-back" class="sheet-back">‹ Назад</button>
-      <div class="sheet-title">Уровни</div>
-      <span class="chip" id="levels-season">сезон 1 · ещё 11 дней</span>
-    </div>
-
-    <div class="levels-header">
-      <div class="levels-name" id="levels-name">Игрок</div>
-      <div class="levels-level" id="levels-level">Уровень 0</div>
-      <div class="levels-exp" id="levels-exp">40 / 100 опыта · 100 опыта — новый уровень</div>
-      <div class="progress"><div class="progress-fill" id="levels-progress"></div></div>
-    </div>
-
-    <div class="section-title track-title">Награды <span class="chip">обычная дорожка</span></div>
-    <div class="track-viewport" id="normal-track-viewport">
-      <div class="track-rail" id="normal-track"></div>
-    </div>
-
-    <div class="section-title track-title gold-title">Золотая дорожка <span class="chip" id="gold-friends">0 из 10 друзей</span></div>
-    <div class="gold-hint" id="gold-hint">Пригласи 10 друзей — каждый должен сделать 5 заданий.</div>
-    <button class="wide-btn gold-btn" id="gold-invite">Позвать друзей</button>
-    <div class="track-viewport gold" id="gold-track-viewport">
-      <div class="track-rail" id="gold-track"></div>
-    </div>
-    <div class="gold-note">Мишка в финале · ещё 29 золотых наград: кейсы до 50⭐, спины, сундуки, золотая рамка</div>
-
-    <div class="section-title quest-title">Квесты на опыт</div>
-    <div class="quests" id="quests-list"></div>
-    <div class="fineprint">Задания дают опыт, каждые 100 — новый уровень и награда. Награды с деньгами — из того, что ты приносишь боту: бывает, ждут следующих подписок, а золотые — подписок друзей. Награды созревают 12 часов, как токены заданий.</div>
-  </div>
-</div>
-
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20261125za"></script>
+<script src="app.js?v=20261125o"></script>
 </body>
 </html>

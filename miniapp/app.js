@@ -48,55 +48,30 @@ function switchTab(name) {
   if (window.scrollTo) window.scrollTo(0, 0);
 }
 
-function levelState() {
-  const u = (profile && profile.user) || {};
-  const d = daily || {};
-  const completed = Number(u.completed || 0);
-  const completedToday = Number(d.completed_today || u.exp || 0);
-  const goal = Number(d.goal || 3);
-  const level = Math.floor(completed / 3);
-  const exp = Math.min(100, (completedToday % 3) * 40);
-  return {
-    username: u.username || "Игрок",
-    completed,
-    completedToday,
-    goal,
-    level,
-    exp,
-    expNext: 100,
-    need: Math.max(0, 100 - exp),
-    pct: Math.min(100, Math.round(exp)),
-  };
-}
-
-function updateSeasonUI() {
-  const s = levelState();
-  const levelWord = s.level ? "следующего" : "1-го";
-  setText("header-level", "Уровень " + s.level);
-  setText("home-level", String(s.level));
-  setText("home-season-name", s.username + " · сезон 1");
-  setText("season-level", "Уровень " + s.level);
-  setText("pass-level-num", String(s.level));
-  setText("season-today", "Сегодня " + Math.min(s.completedToday, s.goal) + " из " + s.goal);
-  setText("season-exp", "до " + levelWord + " — " + s.need + " опыта");
-  const homeFill = $("home-progress");
-  if (homeFill) homeFill.style.width = s.pct + "%";
-  const seasonFill = $("season-progress-fill");
-  if (seasonFill) seasonFill.style.width = s.pct + "%";
-  setText("home-progress-note", s.need ? "До следующего уровня: " + s.need + " опыта" : "Уровень почти открыт");
-}
-
 function renderProfile(data) {
   profile = data;
   const b = data.balance || {};
   const u = data.user || {};
 
-  updateSeasonUI();
   setText("home-balance", usd(b.usd));
   setText("home-balance-stars", "≈ " + stars(b.stars));
   setText("home-frozen", usd(b.frozen_usd));
   setText("home-frozen-stars", "≈ " + stars(b.frozen_stars));
   setText("home-tasks", String(u.completed || 0));
+  setText("header-level", "Уровень " + (u.level || 0));
+  setText("home-level", String(u.level || 0));
+  setText("home-season-name", (u.username || "Игрок") + " · сезон 1");
+  setText("season-level", "Уровень " + (u.level || 0));
+
+  const need = Math.max(0, (u.exp_next || 3) - (u.exp || 0));
+  const pct = Math.min(100, Math.round(((u.exp || 0) / Math.max(1, u.exp_next || 3)) * 100));
+  $("home-progress").style.width = pct + "%";
+  const seasonFill = $("season-progress-fill");
+  if (seasonFill) seasonFill.style.width = pct + "%";
+  const levelWord = u.level ? "следующего" : "1-го";
+  setText("season-today", "Сегодня 0 из 3");
+  setText("season-exp", "до " + levelWord + " — " + need + " опыта");
+  setText("home-progress-note", need ? "До следующего уровня: " + need + " заданий" : "Следующий уровень уже близко");
 
   setText("withdraw-balance", usd(b.usd));
   setText("withdraw-balance-stars", "≈ " + stars(b.stars));
@@ -245,7 +220,10 @@ function renderHistory(data) {
 
 function renderDaily(data) {
   daily = data;
-  updateSeasonUI();
+  setText(
+    "season-today",
+    "Сегодня " + Number(data.completed_today || 0) + " из " + Number(data.goal || 3)
+  );
   setText("daily-streak", "серия " + Number(data.streak || 0));
   setText(
     "daily-progress",
@@ -912,294 +890,21 @@ function startPromoCarousel() {
   }, 3500);
 }
 
-const NORMAL_REWARDS = {
-  1: "Рамка золото · 0,25⭐",
-  2: "+30 опыта · щит серии",
-  3: "Спин рулетки · 0,25⭐",
-  4: "Сундук ещё один",
-  5: "Рамка бронза · +30 опыта",
-  6: "щит серии · 0,25⭐",
-  7: "Сундук ещё один",
-  8: "Спин рулетки · 0,25⭐",
-  9: "Кейс до 50⭐",
-  10: "Кейс до 50⭐ · 0,5⭐",
-  11: "+30 опыта · 0,5⭐",
-  12: "Сундук ещё один",
-  13: "щит серии",
-  14: "+30 опыта · 0,25⭐",
-  15: "Рамка серебро",
-  16: "Сундук ещё один",
-  17: "0,25⭐",
-  18: "Сундук ещё один",
-  19: "0,25⭐ · щит серии",
-  20: "+30 опыта · 0,5⭐",
-  21: "щит серии",
-  22: "Сундук ещё один",
-  23: "0,25⭐",
-  24: "Сундук ещё один",
-  25: "0,25⭐ · щит серии",
-  26: "0,25⭐ · Сундук ещё один",
-  27: "Сундук ещё один",
-  28: "0,25⭐ · Сундук ещё один",
-  29: "+30 опыта · Сундук ещё один",
-  30: "Финал сезона · Мишка 15⭐ · Кубок",
-};
-
-const GOLD_REWARDS = {
-  1: "Кейс до 50⭐",
-  2: "Спин рулетки",
-  3: "Сундук ещё один",
-  4: "Золотая рамка",
-  5: "Кейс до 50⭐",
-  6: "Сундук ещё один",
-  7: "Спин рулетки",
-  8: "Золотая рамка",
-  9: "Сундук ещё один",
-  10: "Мишка в финале · 15⭐",
-};
-
-function rewardIcon(text) {
-  if (/рамка/i.test(text)) return "🖼️";
-  if (/щит/i.test(text)) return "🛡️";
-  if (/рулетк|спин/i.test(text)) return "🎡";
-  if (/сундук/i.test(text)) return "🎁";
-  if (/мишка|кубок|финал/i.test(text)) return "🏆";
-  if (/кейс/i.test(text)) return "📦";
-  if (/опыта/i.test(text)) return "✨";
-  return "💰";
-}
-
-const QUESTS = [
-  { period: "Сегодня", title: "Зайди в ферму", meta: "засчитается само", reward: 20,
-    check: d => true },
-  { period: "Сегодня", title: "Подпишись на 2 канала в «Заданиях»", meta: "", reward: 40,
-    check: d => Number(d.completedToday || 0) >= 2, action: "К заданиям", go: "tasks" },
-  { period: "Сегодня", title: "Бот в профиле: ссылка в описании или тег в имени", meta: "эта неделя", reward: 30,
-    check: () => false, action: "Поставить", go: "profile" },
-  { period: "Сегодня", title: "Зайди в приложения", meta: "", reward: 40,
-    check: d => true },
-  { period: "Сегодня", title: "Выполни 2 задания", meta: "", reward: 60,
-    check: d => Number(d.completedToday || 0) >= 2, action: "К заданиям", go: "tasks" },
-  { period: "Эта неделя", title: "Заходи 5 дней за эту неделю", meta: "", reward: 150,
-    check: d => Number(d.streak || 0) >= 5 },
-  { period: "Эта неделя", title: "Друзья сделали 10 заданий все вместе за неделю", meta: "", reward: 150,
-    check: d => Number(d.friendsCompleted || 0) >= 10, action: "Позвать", go: "profile" },
-  { period: "Эта неделя", title: "Бот в профиле 7 дней подряд: ссылка или тег", meta: "", reward: 150,
-    check: () => false, action: "Поставить", go: "profile" },
-];
-
-function initDragTrack(viewportId, railId) {
-  const viewport = $(viewportId);
-  if (!viewport || viewport._dragReady) return;
-  viewport._dragReady = true;
-  let startX = 0, startOffset = 0, offset = 0, dragging = false, moved = false;
-  const maxOffset = () => {
-    const rail = $(railId);
-    return rail ? Math.max(0, rail.scrollWidth - viewport.clientWidth) : 0;
-  };
-  const apply = () => {
-    const rail = $(railId);
-    if (rail) rail.style.transform = "translateX(" + (-offset) + "px)";
-  };
-  viewport.setTrackOffset = value => {
-    offset = Math.min(maxOffset(), Math.max(0, Number(value) || 0));
-    apply();
-  };
-  viewport.addEventListener("pointerdown", event => {
-    dragging = true;
-    moved = false;
-    startX = event.clientX;
-    startOffset = offset;
-    const rail = $(railId);
-    if (rail) rail.style.transition = "none";
-    viewport.setPointerCapture(event.pointerId);
-  });
-  viewport.addEventListener("pointermove", event => {
-    if (!dragging) return;
-    const dx = event.clientX - startX;
-    if (Math.abs(dx) > 5) moved = true;
-    offset = Math.min(maxOffset(), Math.max(0, startOffset - dx));
-    apply();
-  });
-  const finish = () => {
-    if (!dragging) return;
-    dragging = false;
-    viewport._justDragged = moved;
-    const rail = $(railId);
-    if (rail) rail.style.transition = "transform .45s cubic-bezier(.2,.8,.2,1)";
-    const step = 100;
-    offset = Math.min(maxOffset(), Math.max(0, Math.round(offset / step) * step));
-    apply();
-  };
-  viewport.addEventListener("pointerup", finish);
-  viewport.addEventListener("pointercancel", finish);
-  viewport.addEventListener("click", event => {
-    if (viewport._justDragged) {
-      event.preventDefault();
-      event.stopPropagation();
-      viewport._justDragged = false;
-    }
-  }, true);
-}
-
-function renderLevels() {
-  const u = (profile && profile.user) || {};
-  const s = levelState();
-
-  setText("levels-name", s.username);
-  setText("levels-level", "Уровень " + s.level);
-  setText("levels-exp", s.exp + " / " + s.expNext + " опыта · " + s.expNext + " опыта — новый уровень");
-  const fill = $("levels-progress");
-  if (fill) fill.style.width = s.pct + "%";
-
-  const normal = $("normal-track");
-  if (normal) {
-    normal.innerHTML = "";
-    for (let i = 1; i <= 30; i++) {
-      const node = document.createElement("div");
-      node.className = "track-node" + (i === s.level + 1 ? " current" : "") + (i > s.level + 1 ? " locked" : "");
-      const reward = NORMAL_REWARDS[i] || "Награда";
-      node.innerHTML = '<div class="node-level">' + i + '</div><div class="node-icon">' +
-        rewardIcon(reward) + '</div><div class="node-reward">' + reward + "</div>";
-      normal.appendChild(node);
-    }
-  }
-
-  const gold = $("gold-track");
-  if (gold) {
-    gold.innerHTML = "";
-    const goldFriends = Number(u.gold_friends || 0);
-    const unlocked = goldFriends >= 10;
-    for (let i = 1; i <= 10; i++) {
-      const node = document.createElement("div");
-      node.className = "track-node" + (unlocked ? "" : " locked");
-      const reward = GOLD_REWARDS[i] || "Награда";
-      node.innerHTML = '<div class="node-level">' + i + '</div><div class="node-icon">' +
-        rewardIcon(reward) + '</div><div class="node-reward">' + reward + "</div>";
-      gold.appendChild(node);
-    }
-    setText("gold-friends", Math.min(goldFriends, 10) + " из 10 друзей");
-    setText("gold-hint", unlocked
-      ? "Золотая дорожка открыта — забирай награды"
-      : "Друзей в деле: " + Math.min(goldFriends, 10) + " из 10 · каждый должен сделать 5 заданий");
-  }
-
-  const list = $("quests-list");
-  if (list) {
-    list.innerHTML = "";
-    let period = "";
-    QUESTS.forEach(quest => {
-      if (quest.period !== period) {
-        period = quest.period;
-        const heading = document.createElement("div");
-        heading.className = "sub";
-        heading.textContent = period + " · новые в " + (period === "Сегодня" ? "полночь" : "понедельник");
-        list.appendChild(heading);
-      }
-      const state = {
-        streak: Number((daily || {}).streak || 0),
-        totalCompleted: s.completed,
-        completedToday: s.completedToday,
-        friendsCompleted: Number(u.friends_completed || 0),
-      };
-      const done = Boolean(quest.check(state));
-      const row = document.createElement("div");
-      row.className = "quest-row" + (done ? " done" : "");
-      const check = document.createElement("div");
-      check.className = "quest-check";
-      check.textContent = "✓";
-      const body = document.createElement("div");
-      body.className = "quest-body";
-      const name = document.createElement("div");
-      name.className = "quest-name";
-      name.textContent = quest.title;
-      const meta = document.createElement("div");
-      meta.className = "quest-meta";
-      meta.textContent = quest.meta || "";
-      body.appendChild(name);
-      body.appendChild(meta);
-      const reward = document.createElement("div");
-      reward.className = "quest-reward";
-      reward.textContent = "+" + quest.reward;
-      row.appendChild(check);
-      row.appendChild(body);
-      row.appendChild(reward);
-      if (!done && quest.action) {
-        const button = document.createElement("button");
-        button.className = "quest-btn";
-        button.textContent = quest.action;
-        button.onclick = () => {
-          $("levels-overlay").classList.add("hidden");
-          switchTab(quest.go || "profile");
-        };
-        row.appendChild(button);
-      }
-      list.appendChild(row);
-    });
-  }
-}
-
-function openLevels() {
-  const overlay = $("levels-overlay");
-  if (!overlay) return;
-  overlay.classList.remove("hidden");
-  overlay.classList.remove("levels-in");
-  renderLevels();
-  initDragTrack("normal-track-viewport", "normal-track");
-  initDragTrack("gold-track-viewport", "gold-track");
-  requestAnimationFrame(() => {
-    const normalViewport = $("normal-track-viewport");
-    if (normalViewport && normalViewport.setTrackOffset) {
-      normalViewport.setTrackOffset(levelState().level * 100);
-    }
-    overlay.classList.add("levels-in");
-  });
-}
-
 document.querySelectorAll(".nav-item").forEach(el => {
   el.addEventListener("click", () => switchTab(el.dataset.tab));
 });
-function showLegacy(id) {
-  const box = $("home-legacy");
-  if (!box) return;
-  box.classList.remove("hidden");
-  box.querySelectorAll(".card").forEach(card => {
-    card.classList.toggle("hidden", card.id !== id);
-  });
-  switchTab("home");
-  const target = $(id);
-  if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
-}
-
-function hideLegacy() {
-  const box = $("home-legacy");
-  if (box) box.classList.add("hidden");
-  window.scrollTo(0, 0);
-}
-
 document.querySelectorAll("[data-go]").forEach(el => {
   el.addEventListener("click", () => {
     const go = el.dataset.go;
-    if (go === "cases") {
-      openCasesScreen();
-      return;
-    }
-    if (go === "daily") {
-      showLegacy("daily-home-card");
-      return;
-    }
     if (go === "roulette" || go === "mines" || go === "starfield") {
-      showLegacy(go === "roulette" ? "roulette-section" : "starfield-section");
+      switchTab("home");
+      const target = $(go === "roulette" ? "roulette-section" : "starfield-section");
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
       return;
     }
     switchTab(go);
   });
 });
-
-const legacyBack = $("legacy-back");
-if (legacyBack) legacyBack.addEventListener("click", hideLegacy);
-const openDaily = $("open-daily");
-if (openDaily) openDaily.addEventListener("click", () => showLegacy("daily-home-card"));
 
 $("check-tasks").addEventListener("click", () => {
   sendToBot({ action: "check_tasks" });
@@ -1215,22 +920,6 @@ const homeTasksMore = $("home-tasks-more");
 if (homeTasksMore) homeTasksMore.addEventListener("click", () => switchTab("tasks"));
 const homeFriends = $("home-friends-invite");
 if (homeFriends) homeFriends.addEventListener("click", () => switchTab("profile"));
-
-["home-season-art", "season-level", "home-level", "header-level"].forEach(id => {
-  const el = $(id);
-  if (el) el.addEventListener("click", openLevels);
-});
-const levelsBack = $("levels-back");
-if (levelsBack) levelsBack.addEventListener("click", () => {
-  const overlay = $("levels-overlay");
-  overlay.classList.add("hidden");
-  overlay.classList.remove("levels-in");
-});
-const goldInvite = $("gold-invite");
-if (goldInvite) goldInvite.addEventListener("click", () => {
-  $("levels-overlay").classList.add("hidden");
-  switchTab("profile");
-});
 
 document.querySelectorAll(".seg").forEach(el => {
   el.addEventListener("click", () => {

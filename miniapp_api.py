@@ -1415,19 +1415,6 @@ async def miniapp_profile(request: web.Request) -> web.Response:
     level = completed // 3
     exp = completed % 3
 
-    # Для золотой дорожки: друг считается «в деле», когда сделал 5 заданий.
-    async with aiosqlite.connect("bot_database.db") as db:
-        async with db.execute(
-            "SELECT "
-            "COALESCE(SUM(CASE WHEN COALESCE(completed_tasks, 0) >= 5 THEN 1 ELSE 0 END), 0), "
-            "COALESCE(SUM(completed_tasks), 0) "
-            "FROM users WHERE referrer_id = ?",
-            (user_id,),
-        ) as cursor:
-            row = await cursor.fetchone()
-    gold_friends = int(row[0] or 0) if row else 0
-    friends_completed = int(row[1] or 0) if row else 0
-
     return web.json_response(
         {
             "user": {
@@ -1437,8 +1424,6 @@ async def miniapp_profile(request: web.Request) -> web.Response:
                 "level": level,
                 "exp": exp,
                 "exp_next": 3,
-                "gold_friends": gold_friends,
-                "friends_completed": friends_completed,
                 "referral_link": f"https://t.me/UAMONEY_BOT?start={user_id}",
             },
             "balance": {
