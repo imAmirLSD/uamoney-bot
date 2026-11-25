@@ -982,7 +982,7 @@ const QUESTS = [
   { period: "Эта неделя", title: "Заходи 5 дней за эту неделю", meta: "", reward: 150,
     check: d => Number(d.streak || 0) >= 5 },
   { period: "Эта неделя", title: "Друзья сделали 10 заданий все вместе за неделю", meta: "", reward: 150,
-    check: () => false, action: "Позвать", go: "profile" },
+    check: d => Number(d.friendsCompleted || 0) >= 10, action: "Позвать", go: "profile" },
   { period: "Эта неделя", title: "Бот в профиле 7 дней подряд: ссылка или тег", meta: "", reward: 150,
     check: () => false, action: "Поставить", go: "profile" },
 ];
@@ -1080,7 +1080,7 @@ function renderLevels() {
     setText("gold-friends", Math.min(goldFriends, 10) + " из 10 друзей");
     setText("gold-hint", unlocked
       ? "Золотая дорожка открыта — забирай награды"
-      : "Пригласи 10 друзей — каждый должен сделать 5 заданий");
+      : "Друзей в деле: " + Math.min(goldFriends, 10) + " из 10 · каждый должен сделать 5 заданий");
   }
 
   const list = $("quests-list");
@@ -1099,6 +1099,7 @@ function renderLevels() {
         streak: Number((daily || {}).streak || 0),
         totalCompleted: s.completed,
         completedToday: s.completedToday,
+        friendsCompleted: Number(u.friends_completed || 0),
       };
       const done = Boolean(quest.check(state));
       const row = document.createElement("div");
