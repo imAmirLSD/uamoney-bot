@@ -68,6 +68,7 @@ function renderProfile(data) {
   setText("withdraw-balance", usd(b.usd));
   setText("withdraw-balance-stars", "≈ " + stars(b.stars));
   setText("cases-balance", stars(b.stars));
+  setText("sheet-balance", stars(b.stars));
   setText("roulette-balance", stars(b.stars));
   setText("starfield-balance", stars(b.stars));
   setText("tasks-progress", "Выполнено за всё время: " + (u.completed || 0));
@@ -202,37 +203,169 @@ function renderHistory(data) {
 function renderCases(data) {
   cases = data.cases || [];
   const list = $("case-list");
-  if (!list) return;
-  list.innerHTML = "";
+  if (list) {
+    list.innerHTML = "";
+    cases.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "case-row";
+      const info = document.createElement("div");
+      info.className = "case-info";
+      const title = document.createElement("div");
+      title.className = "case-title";
+      title.textContent = item.title;
+      const meta = document.createElement("div");
+      meta.className = "task-meta";
+      meta.textContent =
+        "до " + Number(item.max_stars || 0).toFixed(0) + " ⭐ · возврат " +
+        Number(item.return_percent || 0).toFixed(0) + "%";
+      info.appendChild(title);
+      info.appendChild(meta);
 
+      const btn = document.createElement("button");
+      btn.className = "case-btn";
+      btn.textContent = Number(item.cost_stars || 0).toFixed(1) + " ⭐";
+      btn.onclick = () => openCaseDetail(item.id);
+
+      row.appendChild(info);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+  }
+  renderCasesGrid();
+  renderWinsTicker(data.recent_wins || []);
+}
+
+function renderCasesGrid() {
+  const grid = $("cases-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
   cases.forEach(item => {
-    const row = document.createElement("div");
-    row.className = "case-row";
-    const info = document.createElement("div");
-    info.className = "case-info";
-    const title = document.createElement("div");
-    title.className = "case-title";
-    title.textContent = item.title;
-    const meta = document.createElement("div");
-    meta.className = "task-meta";
-    meta.textContent = "до " + Number(item.max_stars || 0).toFixed(0) + " ⭐ · шансы честные";
-    info.appendChild(title);
-    info.appendChild(meta);
+    const card = document.createElement("div");
+    card.className = "case-card";
+
+    const top = document.createElement("div");
+    top.className = "case-card-top";
+    top.textContent = item.title;
+    const badge = document.createElement("span");
+    badge.className = "chip";
+    badge.textContent = Number(item.cost_stars || 0).toFixed(1) + " ⭐";
+    top.appendChild(badge);
+
+    const sub = document.createElement("div");
+    sub.className = "task-meta";
+    sub.textContent =
+      (item.prizes || []).length + " призов · возврат " +
+      Number(item.return_percent || 0).toFixed(0) + "% · главный — " +
+      Number(item.max_stars || 0).toFixed(0) + " ⭐";
 
     const btn = document.createElement("button");
-    btn.className = "case-btn";
-    btn.dataset.case = item.id;
-    btn.textContent = Number(item.cost_stars || 0).toFixed(1) + " ⭐";
-    btn.onclick = () => openCase(item.id, btn);
+    btn.className = "wide-btn case-card-btn";
+    btn.textContent = "Смотреть шансы";
+    btn.onclick = () => openCaseDetail(item.id);
 
-    row.appendChild(info);
-    row.appendChild(btn);
-    list.appendChild(row);
+    card.appendChild(top);
+    card.appendChild(sub);
+    card.appendChild(btn);
+    grid.appendChild(card);
   });
 }
 
-async function openCase(caseId, button) {
-  const resultBox = $("case-result");
+function renderWinsTicker(wins) {
+  const box = $("wins-ticker");
+  if (!box) return;
+  if (!wins.length) {
+    box.textContent = "Сейчас выигрывают: первые призы появятся здесь";
+    return;
+  }
+  box.textContent =
+    "Сейчас выигрывают: " +
+    wins.slice(0, 4).map(item =>
+      item.case + " +" + Number(item.stars || 0).toFixed(1) + " ⭐"
+    ).join(" · ");
+}
+
+function openCasesScreen() {
+  const screen = $("cases-overlay");
+  const detail = $("case-detail-overlay");
+  if (detail) detail.classList.add("hidden");
+  if (screen) screen.classList.remove("hidden");
+}
+
+function closeCasesScreen() {
+  const screen = $("cases-overlay");
+  const detail = $("case-detail-overlay");
+  if (screen) screen.classList.add("hidden");
+  if (detail) detail.classList.add("hidden");
+}
+
+function openCaseDetail(caseId) {
+  const item = (cases || []).find(entry => entry.id === caseId);
+  if (!item) return;
+  const screen = $("cases-overlay");
+  const detail = $("case-detail-overlay");
+  const body = $("detail-body");
+  if (!detail || !body) return;
+  if (screen) screen.classList.add("hidden");
+  detail.classList.remove("hidden");
+  setText("detail-title", "Кейс «" + item.title + "»");
+  setText("detail-cost", Number(item.cost_stars || 0).toFixed(1) + " ⭐");
+  body.innerHTML = "";
+
+  const summary = document.createElement("div");
+  summary.className = "case-summary";
+  summary.textContent =
+    (item.prizes || []).length + " призов · возврат " +
+    Number(item.return_percent || 0).toFixed(0) + "% · главный — " +
+    Number(item.max_stars || 0).toFixed(0) + " ⭐";
+  body.appendChild(summary);
+
+  const hint = document.createElement("div");
+  const balanceStars = (profile && profile.balance && profile.balance.stars) || 0;
+  const need = Number(item.cost_stars || 0) - Number(balanceStars || 0);
+  hint.className = "sub case-hint";
+  hint.textContent = need > 0
+    ? "Добрать " + Number(need).toFixed(2) + " ⭐ на заданиях"
+    : "Выигрыш сразу на балансе · код раунда сохраняется";
+  body.appendChild(hint);
+
+  const table = document.createElement("div");
+  table.className = "prize-table";
+  (item.prizes || []).forEach(prize => {
+    const row = document.createElement("div");
+    row.className = "prize-row";
+    const label = document.createElement("div");
+    label.className = "prize-label";
+    label.textContent = Number(prize.stars || 0).toFixed(2) + " ⭐";
+    const chance = document.createElement("div");
+    chance.className = "prize-chance";
+    chance.textContent = (Number(prize.chance || 0) * 100).toFixed(2) + "%";
+    const bar = document.createElement("div");
+    bar.className = "prize-bar";
+    const fill = document.createElement("div");
+    fill.className = "prize-bar-fill";
+    fill.style.width = Math.min(100, Math.sqrt(Number(prize.chance || 0)) * 100) + "%";
+    bar.appendChild(fill);
+    row.appendChild(label);
+    row.appendChild(bar);
+    row.appendChild(chance);
+    table.appendChild(row);
+  });
+  body.appendChild(table);
+
+  const play = document.createElement("button");
+  play.className = "wide-btn primary";
+  play.textContent = "Открыть за " + Number(item.cost_stars || 0).toFixed(1) + " ⭐";
+  play.onclick = () => openCase(item.id, play, "detail-result");
+  body.appendChild(play);
+
+  const result = document.createElement("div");
+  result.id = "detail-result";
+  result.className = "case-result hidden";
+  body.appendChild(result);
+}
+
+async function openCase(caseId, button, resultId) {
+  const resultBox = $(resultId || "case-result");
   if (!resultBox) return;
   button.disabled = true;
   try {
@@ -253,6 +386,7 @@ async function openCase(caseId, button) {
     toast(result.message || "Кейс открыт");
     api("/profile").then(renderProfile).catch(() => {});
     api("/history").then(renderHistory).catch(() => {});
+    api("/cases").then(renderCases).catch(() => {});
   } catch (error) {
     toast(error.message);
   } finally {
@@ -524,6 +658,13 @@ document.querySelectorAll("[data-go]").forEach(el => {
 $("check-tasks").addEventListener("click", () => {
   sendToBot({ action: "check_tasks" });
 });
+
+const casesAll = $("cases-all");
+if (casesAll) casesAll.addEventListener("click", openCasesScreen);
+const casesBack = $("cases-back");
+if (casesBack) casesBack.addEventListener("click", closeCasesScreen);
+const detailBack = $("detail-back");
+if (detailBack) detailBack.addEventListener("click", openCasesScreen);
 
 document.querySelectorAll(".seg").forEach(el => {
   el.addEventListener("click", () => {

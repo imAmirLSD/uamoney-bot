@@ -265,13 +265,11 @@ CASE_DEFS = {
         "cost_stars": 2.5,
         "max_stars": 50,
         "prizes": (
-            (0.35, 0.40),
-            (0.70, 0.25),
-            (1.25, 0.15),
-            (2.50, 0.10),
-            (5.00, 0.06),
-            (15.00, 0.03),
-            (50.00, 0.01),
+            (50.00, 0.0040),
+            (10.00, 0.0375),
+            (3.70, 0.1800),
+            (1.50, 0.3500),
+            (1.00, 0.4285),
         ),
     },
     "pro": {
@@ -280,13 +278,11 @@ CASE_DEFS = {
         "cost_stars": 12.5,
         "max_stars": 250,
         "prizes": (
-            (1.75, 0.40),
-            (3.50, 0.25),
-            (6.25, 0.15),
-            (12.50, 0.10),
-            (25.00, 0.06),
-            (75.00, 0.03),
-            (250.00, 0.01),
+            (250.00, 0.0020),
+            (50.00, 0.0620),
+            (17.00, 0.1800),
+            (12.50, 0.2000),
+            (3.30, 0.5560),
         ),
     },
     "giant": {
@@ -295,12 +291,11 @@ CASE_DEFS = {
         "cost_stars": 50.0,
         "max_stars": 500,
         "prizes": (
-            (5.00, 0.35),
-            (15.00, 0.30),
-            (50.00, 0.20),
-            (125.00, 0.09),
-            (250.00, 0.05),
-            (500.00, 0.01),
+            (500.00, 0.0050),
+            (150.00, 0.0620),
+            (75.00, 0.1800),
+            (37.00, 0.3200),
+            (12.50, 0.4330),
         ),
     },
 }
@@ -357,11 +352,33 @@ async def miniapp_cases(request: web.Request) -> web.Response:
     cases = [_case_public(CASE_DEFS[key]) for key in ("start", "pro", "giant")]
     for item in cases:
         item["expected_stars"] = _case_expected_stars(CASE_DEFS[item["id"]])
+        item["return_percent"] = round(
+            item["expected_stars"] / item["cost_stars"] * 100, 1
+        )
+
+    recent_wins = []
+    try:
+        async with aiosqlite.connect("bot_database.db") as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT case_id, prize_stars, created_at FROM miniapp_case_rounds "
+                "ORDER BY id DESC LIMIT 8"
+            ) as cursor:
+                for row in await cursor.fetchall():
+                    recent_wins.append({
+                        "case": CASE_DEFS.get(row["case_id"], {}).get("title", "Кейс"),
+                        "stars": row["prize_stars"],
+                        "time": _history_date(row["created_at"]),
+                    })
+    except Exception:
+        pass
+
     return web.json_response(
         {
             "cases": cases,
+            "recent_wins": recent_wins,
             "star_usd": STAR_USD,
-            "message": "Приз зачисляется сразу на выводимый баланс. Код раунда сохраняется в истории.",
+            "message": "Приз зачисляется сразу на выводимый баланс. Каждый раунд проверяется по коду.",
         }
     )
 

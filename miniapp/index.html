@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0f16">
   <title>UA. Mini App</title>
-  <link rel="stylesheet" href="style.css?v=20261125d">
+  <link rel="stylesheet" href="style.css?v=20261125e">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -58,8 +58,9 @@
 
       <div class="card">
         <div class="section-title">Кейсы <span class="chip" id="cases-balance">0 ⭐</span></div>
-        <div class="sub">Шансы указаны честно, код раунда сохраняется в истории</div>
         <div class="case-list" id="case-list"></div>
+        <button class="text-link" id="cases-all">все 3 · шансы ›</button>
+        <div class="wins-ticker" id="wins-ticker"></div>
         <div class="case-result hidden" id="case-result"></div>
       </div>
 
@@ -173,7 +174,30 @@
     <button class="nav-item" data-tab="profile"><span>👤</span>Профиль</button>
   </nav>
 </div>
+<div class="overlay hidden" id="cases-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button id="cases-back" class="sheet-back">‹ Назад</button>
+      <div class="sheet-title">Кейсы</div>
+      <span class="chip" id="sheet-balance">0 ⭐</span>
+    </div>
+    <div class="cases-grid" id="cases-grid"></div>
+    <div class="fineprint">Возврат — сколько в среднем возвращается от цены кейса. Выигрыш сразу на балансе. Каждый раунд проверяется по коду.</div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="case-detail-overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button id="detail-back" class="sheet-back">‹ Кейсы</button>
+      <div class="sheet-title" id="detail-title">Кейс</div>
+      <span class="chip" id="detail-cost">0 ⭐</span>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20261125d"></script>
+<script src="app.js?v=20261125e"></script>
 </body>
 </html>
