@@ -251,6 +251,26 @@ async function claimDaily() {
   }
 }
 
+function makeCaseVisual(caseId, size) {
+  const wrap = document.createElement("div");
+  wrap.className = "case-visual case-" + caseId + " " + (size || "cv-small");
+
+  const glow = document.createElement("div");
+  glow.className = "cv-glow";
+  const body = document.createElement("div");
+  body.className = "cv-body";
+  const lid = document.createElement("div");
+  lid.className = "cv-lid";
+  const lock = document.createElement("div");
+  lock.className = "cv-lock";
+
+  wrap.appendChild(glow);
+  wrap.appendChild(body);
+  wrap.appendChild(lid);
+  wrap.appendChild(lock);
+  return wrap;
+}
+
 function renderCases(data) {
   cases = data.cases || [];
   const list = $("case-list");
@@ -259,6 +279,7 @@ function renderCases(data) {
     cases.forEach(item => {
       const row = document.createElement("div");
       row.className = "case-row case-home-row";
+      row.appendChild(makeCaseVisual(item.id, "cv-small"));
       const max = document.createElement("div");
       max.className = "case-max";
       max.textContent = "до " + Number(item.max_stars || 0).toFixed(0) + " ⭐";
@@ -286,6 +307,7 @@ function renderCasesGrid() {
   cases.forEach(item => {
     const card = document.createElement("div");
     card.className = "case-card";
+    card.appendChild(makeCaseVisual(item.id, "cv-medium"));
 
     const top = document.createElement("div");
     top.className = "case-card-top";
@@ -358,6 +380,9 @@ function openCaseDetail(caseId) {
   setText("detail-title", "Кейс «" + item.title + "»");
   setText("detail-cost", Number(item.cost_stars || 0).toFixed(1) + " ⭐");
   body.innerHTML = "";
+  const detailVisual = makeCaseVisual(item.id, "cv-large");
+  detailVisual.style.margin = "0 auto 10px";
+  body.appendChild(detailVisual);
 
   const stat = document.createElement("div");
   stat.className = "case-big-stat";
@@ -435,29 +460,59 @@ function openCaseDetail(caseId) {
 }
 
 async function openCase(caseId, button, resultId) {
-  const resultBox = $(resultId || "case-result");
-  if (!resultBox) return;
+  const overlay = $("case-open-overlay");
+  const visualBox = $("opening-visual");
+  const prizeBox = $("opening-prize");
+  const codeBox = $("opening-code");
+  const closeBtn = $("opening-close");
+  if (!overlay || !visualBox || !prizeBox || !codeBox) return;
+
   button.disabled = true;
+  prizeBox.textContent = "";
+  prizeBox.classList.add("hidden");
+  codeBox.textContent = "Открываем…";
+  visualBox.innerHTML = "";
+  const visual = makeCaseVisual(caseId, "cv-xl");
+  visualBox.appendChild(visual);
+  overlay.classList.remove("hidden");
+  setTimeout(() => visual.classList.add("case-opening"), 40);
+
+  const showResult = result => {
+    visual.classList.remove("case-opening");
+    prizeBox.textContent = "+" + Number(result.prize_stars || 0).toFixed(2) + " ⭐";
+    prizeBox.classList.remove("hidden");
+    codeBox.textContent = usd(result.prize_usd) + " · код раунда " + result.code;
+    const resultBox = $(resultId || "case-result");
+    if (resultBox) {
+      resultBox.classList.remove("hidden");
+      resultBox.innerHTML = "";
+      const title = document.createElement("div");
+      title.className = "case-win";
+      title.textContent = "+" + Number(result.prize_stars || 0).toFixed(2) + " ⭐";
+      const detail = document.createElement("div");
+      detail.className = "sub";
+      detail.textContent = usd(result.prize_usd) + " · код раунда " + result.code;
+      resultBox.appendChild(title);
+      resultBox.appendChild(detail);
+    }
+    closeBtn.onclick = () => overlay.classList.add("hidden");
+  };
+
   try {
-    const result = await api("/cases/open", {
-      method: "POST",
-      body: JSON.stringify({ case_id: caseId }),
-    });
-    resultBox.classList.remove("hidden");
-    resultBox.innerHTML = "";
-    const title = document.createElement("div");
-    title.className = "case-win";
-    title.textContent = "+" + Number(result.prize_stars || 0).toFixed(2) + " ⭐";
-    const detail = document.createElement("div");
-    detail.className = "sub";
-    detail.textContent = usd(result.prize_usd) + " · код раунда " + result.code;
-    resultBox.appendChild(title);
-    resultBox.appendChild(detail);
+    const [result] = await Promise.all([
+      api("/cases/open", {
+        method: "POST",
+        body: JSON.stringify({ case_id: caseId }),
+      }),
+      new Promise(resolve => setTimeout(resolve, 1100)),
+    ]);
+    showResult(result);
     toast(result.message || "Кейс открыт");
     api("/profile").then(renderProfile).catch(() => {});
     api("/history").then(renderHistory).catch(() => {});
     api("/cases").then(renderCases).catch(() => {});
   } catch (error) {
+    overlay.classList.add("hidden");
     toast(error.message);
   } finally {
     button.disabled = false;
