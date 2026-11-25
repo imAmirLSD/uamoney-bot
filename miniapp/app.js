@@ -258,26 +258,19 @@ function renderCases(data) {
     list.innerHTML = "";
     cases.forEach(item => {
       const row = document.createElement("div");
-      row.className = "case-row";
-      const info = document.createElement("div");
-      info.className = "case-info";
+      row.className = "case-row case-home-row";
+      const max = document.createElement("div");
+      max.className = "case-max";
+      max.textContent = "до " + Number(item.max_stars || 0).toFixed(0) + " ⭐";
       const title = document.createElement("div");
       title.className = "case-title";
       title.textContent = item.title;
-      const meta = document.createElement("div");
-      meta.className = "task-meta";
-      meta.textContent =
-        "до " + Number(item.max_stars || 0).toFixed(0) + " ⭐ · возврат " +
-        Number(item.return_percent || 0).toFixed(0) + "%";
-      info.appendChild(title);
-      info.appendChild(meta);
-
       const btn = document.createElement("button");
       btn.className = "case-btn";
       btn.textContent = Number(item.cost_stars || 0).toFixed(1) + " ⭐";
       btn.onclick = () => openCaseDetail(item.id);
-
-      row.appendChild(info);
+      row.appendChild(max);
+      row.appendChild(title);
       row.appendChild(btn);
       list.appendChild(row);
     });
@@ -302,20 +295,24 @@ function renderCasesGrid() {
     badge.textContent = Number(item.cost_stars || 0).toFixed(1) + " ⭐";
     top.appendChild(badge);
 
-    const sub = document.createElement("div");
-    sub.className = "task-meta";
-    sub.textContent =
+    const sub1 = document.createElement("div");
+    sub1.className = "case-card-sub";
+    sub1.textContent =
       (item.prizes || []).length + " призов · возврат " +
-      Number(item.return_percent || 0).toFixed(0) + "% · главный — " +
-      Number(item.max_stars || 0).toFixed(0) + " ⭐";
+      Number(item.return_percent || 0).toFixed(0) + "%";
+
+    const sub2 = document.createElement("div");
+    sub2.className = "case-card-sub";
+    sub2.textContent = "главный — " + Number(item.max_stars || 0).toFixed(0) + " ⭐";
 
     const btn = document.createElement("button");
     btn.className = "wide-btn case-card-btn";
-    btn.textContent = "Смотреть шансы";
+    btn.textContent = "для игры";
     btn.onclick = () => openCaseDetail(item.id);
 
     card.appendChild(top);
-    card.appendChild(sub);
+    card.appendChild(sub1);
+    card.appendChild(sub2);
     card.appendChild(btn);
     grid.appendChild(card);
   });
@@ -325,7 +322,7 @@ function renderWinsTicker(wins) {
   const box = $("wins-ticker");
   if (!box) return;
   if (!wins.length) {
-    box.textContent = "Сейчас выигрывают: первые призы появятся здесь";
+    box.textContent = "Сейчас выигрывают: за сутки первые призы появятся здесь";
     return;
   }
   box.textContent =
@@ -361,6 +358,18 @@ function openCaseDetail(caseId) {
   setText("detail-title", "Кейс «" + item.title + "»");
   setText("detail-cost", Number(item.cost_stars || 0).toFixed(1) + " ⭐");
   body.innerHTML = "";
+
+  const stat = document.createElement("div");
+  stat.className = "case-big-stat";
+  const statValue = document.createElement("div");
+  statValue.className = "case-big-value";
+  statValue.textContent = Number(item.expected_stars || 0).toFixed(2) + " ⭐";
+  const statMeta = document.createElement("div");
+  statMeta.className = "sub";
+  statMeta.textContent = "в среднем за раунд · 0/0";
+  stat.appendChild(statValue);
+  stat.appendChild(statMeta);
+  body.appendChild(stat);
 
   const summary = document.createElement("div");
   summary.className = "case-summary";
@@ -403,10 +412,20 @@ function openCaseDetail(caseId) {
   });
   body.appendChild(table);
 
+  const fair = document.createElement("div");
+  fair.className = "fineprint";
+  fair.textContent = "Шансы честные — ровно те, что написаны.";
+  body.appendChild(fair);
+
   const play = document.createElement("button");
   play.className = "wide-btn primary";
-  play.textContent = "Открыть за " + Number(item.cost_stars || 0).toFixed(1) + " ⭐";
-  play.onclick = () => openCase(item.id, play, "detail-result");
+  if (need > 0) {
+    play.textContent = "для игры";
+    play.onclick = () => { closeCasesScreen(); switchTab("tasks"); };
+  } else {
+    play.textContent = "Открыть за " + Number(item.cost_stars || 0).toFixed(1) + " ⭐";
+    play.onclick = () => openCase(item.id, play, "detail-result");
+  }
   body.appendChild(play);
 
   const result = document.createElement("div");

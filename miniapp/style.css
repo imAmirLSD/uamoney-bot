@@ -377,3 +377,37 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(245, 158, 11, 0.3));
   color: #fde68a;
 }
+
+.case-home-row {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.case-max {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.case-card-sub {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.case-big-stat {
+  margin: 10px 0 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  text-align: center;
+}
+
+.case-big-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fde047;
+}
