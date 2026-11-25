@@ -9,6 +9,7 @@ const STAR_USD = 0.017;
 let profile = null;
 let cases = [];
 let roulette = null;
+let starfield = null;
 let selectedStars = 50;
 let withdrawMethod = "stars";
 
@@ -68,6 +69,7 @@ function renderProfile(data) {
   setText("withdraw-balance-stars", "≈ " + stars(b.stars));
   setText("cases-balance", stars(b.stars));
   setText("roulette-balance", stars(b.stars));
+  setText("starfield-balance", stars(b.stars));
   setText("tasks-progress", "Выполнено за всё время: " + (u.completed || 0));
 
   setText("profile-name", u.username || "Пользователь");
@@ -325,6 +327,180 @@ async function spinRoulette(betStars, button) {
   }
 }
 
+function renderStarfield(data) {
+  starfield = data;
+  setText(
+    "starfield-info",
+    data.cells + " клеток · " + data.mines + " чёрных дыр · возврат " +
+      data.return_percent + "% · максимум x" + data.max_multiplier
+  );
+  if (data.active) {
+    renderStarfieldGame(data.active);
+    return;
+  }
+  const betsBox = $("starfield-bets");
+  const gameBox = $("starfield-game");
+  if (!betsBox || !gameBox) return;
+  gameBox.classList.add("hidden");
+  betsBox.innerHTML = "";
+  (data.bets || []).forEach(item => {
+    const row = document.createElement("div");
+    row.className = "case-row";
+    const info = document.createElement("div");
+    info.className = "case-info";
+    const title = document.createElement("div");
+    title.className = "case-title";
+    title.textContent = "Ставка " + Number(item.stars || 0).toFixed(2) + " ⭐";
+    const meta = document.createElement("div");
+    meta.className = "task-meta";
+    meta.textContent = "до " + Number(item.max_win_stars || 0).toFixed(2) + " ⭐ · " + usd(item.usd);
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    const btn = document.createElement("button");
+    btn.className = "case-btn spin-btn";
+    btn.textContent = "Играть";
+    btn.onclick = () => startStarfield(item.stars, btn);
+
+    row.appendChild(info);
+    row.appendChild(btn);
+    betsBox.appendChild(row);
+  });
+}
+
+function renderStarfieldGame(state) {
+  const betsBox = $("starfield-bets");
+  const gameBox = $("starfield-game");
+  const grid = $("starfield-grid");
+  if (!betsBox || !gameBox || !grid) return;
+  betsBox.innerHTML = "";
+  gameBox.classList.remove("hidden");
+  grid.innerHTML = "";
+  const opened = state.opened || [];
+  const active = state.status === "active";
+
+  setText(
+    "starfield-status",
+    "Ставка " + Number(state.bet_stars || 0).toFixed(2) + " ⭐ · x" +
+      Number(state.multiplier || 1).toFixed(2) + " · открыто " + opened.length +
+      " · код " + (state.code || "—")
+  );
+
+  const cashout = $("starfield-cashout");
+  if (cashout) {
+    cashout.disabled = !active;
+    cashout.textContent = "Забрать " +
+      (Number(state.bet_stars || 0) * Number(state.multiplier || 1)).toFixed(2) + " ⭐";
+    cashout.onclick = () => cashoutStarfield(state.round_id);
+  }
+
+  for (let i = 0; i < Number(state.cells || 25); i++) {
+    const cell = document.createElement("button");
+    cell.className = "star-cell";
+    cell.dataset.index = String(i);
+    if (opened.includes(i)) {
+      cell.classList.add("revealed");
+      cell.textContent = "★";
+    } else {
+      cell.textContent = "·";
+      cell.disabled = !active;
+      cell.onclick = () => openStarfieldCell(state.round_id, i, cell);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+async function startStarfield(betStars, button) {
+  button.disabled = true;
+  try {
+    const state = await api("/starfield/start", {
+      method: "POST",
+      body: JSON.stringify({ bet_stars: betStars }),
+    });
+    renderStarfieldGame(state);
+    toast(state.message || "Ставка принята");
+    api("/profile").then(renderProfile).catch(() => {});
+    api("/history").then(renderHistory).catch(() => {});
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function openStarfieldCell(roundId, index, cell) {
+  cell.disabled = true;
+  try {
+    const result = await api("/starfield/open", {
+      method: "POST",
+      body: JSON.stringify({ round_id: roundId, index: index }),
+    });
+    cell.classList.add("revealed");
+    cell.textContent = result.hit === "mine" ? "💥" : "★";
+    if (result.hit === "mine") {
+      cell.classList.add("mine");
+      Array.from(document.querySelectorAll(".star-cell")).forEach(el => {
+        el.disabled = true;
+      });
+      const cashout = $("starfield-cashout");
+      if (cashout) cashout.disabled = true;
+    }
+    const state = {
+      round_id: result.round_id,
+      bet_stars: (starfield && starfield.active && starfield.active.bet_stars) || 0,
+      cells: (starfield && starfield.active && starfield.active.cells) || 25,
+      opened: result.opened,
+      status: result.game_over ? "lost" : "active",
+      multiplier: result.multiplier,
+      code: result.code,
+    };
+    starfield.active = state;
+    setText("starfield-status", result.message);
+    const cashout = $("starfield-cashout");
+    if (cashout) {
+      cashout.disabled = !result.can_cashout;
+      cashout.textContent = "Забрать " +
+        (Number(state.bet_stars) * Number(result.multiplier)).toFixed(2) + " ⭐";
+    }
+    api("/history").then(renderHistory).catch(() => {});
+  } catch (error) {
+    toast(error.message);
+    cell.disabled = false;
+  }
+}
+
+async function cashoutStarfield(roundId) {
+  const btn = $("starfield-cashout");
+  if (btn) btn.disabled = true;
+  try {
+    const result = await api("/starfield/cashout", {
+      method: "POST",
+      body: JSON.stringify({ round_id: roundId }),
+    });
+    const box = $("starfield-result");
+    if (box) {
+      box.classList.remove("hidden");
+      box.innerHTML = "";
+      const title = document.createElement("div");
+      title.className = "case-win";
+      title.textContent = "+" + Number(result.payout_stars || 0).toFixed(2) + " ⭐";
+      const detail = document.createElement("div");
+      detail.className = "sub";
+      detail.textContent = usd(result.payout_usd) + " · код " + result.code;
+      box.appendChild(title);
+      box.appendChild(detail);
+    }
+    starfield.active = null;
+    renderStarfield({ ...starfield, active: null });
+    toast(result.message || "Выигрыш получен");
+    api("/profile").then(renderProfile).catch(() => {});
+    api("/history").then(renderHistory).catch(() => {});
+  } catch (error) {
+    toast(error.message);
+    if (btn) btn.disabled = false;
+  }
+}
+
 function updateStarButtons() {
   document.querySelectorAll(".preset").forEach(el => {
     el.classList.toggle("active", Number(el.dataset.stars) === selectedStars);
@@ -405,3 +581,6 @@ api("/cases")
 api("/roulette")
   .then(renderRoulette)
   .catch(error => toast("Не удалось загрузить рулетку: " + error.message));
+api("/starfield")
+  .then(renderStarfield)
+  .catch(error => toast("Не удалось загрузить звёздное поле: " + error.message));

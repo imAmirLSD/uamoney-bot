@@ -210,3 +210,26 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 .spin-btn {
   background: linear-gradient(135deg, #f59e0b, #ef4444);
 }
+
+.starfield-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.star-cell {
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.star-cell:active:not(:disabled) { transform: scale(0.94); }
+.star-cell.revealed { background: rgba(250, 204, 21, 0.16); color: #fde047; cursor: default; }
+.star-cell.mine { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }

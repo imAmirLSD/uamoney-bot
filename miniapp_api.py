@@ -6,6 +6,7 @@ Nginx проксирует /miniapi/ на этот сервер.
 """
 import hashlib
 import hmac
+import math
 import json
 import os
 import re
@@ -624,6 +625,315 @@ async def miniapp_roulette_spin(request: web.Request) -> web.Response:
     )
 
 
+STARFIELD_CELLS = 25
+STARFIELD_MINES = 6
+STARFIELD_BETS = (1.25, 2.50, 5.00)
+STARFIELD_RETURN = 0.80
+STARFIELD_MAX_MULT = 82.56
+
+
+def _starfield_multipliers() -> dict:
+    result = {}
+    survival = 1.0
+    for step in range(1, STARFIELD_CELLS - STARFIELD_MINES + 1):
+        survival *= (STARFIELD_CELLS - STARFIELD_MINES - step + 1) / (
+            STARFIELD_CELLS - step + 1
+        )
+        result[step] = min(
+            STARFIELD_MAX_MULT, math.floor(STARFIELD_RETURN / survival * 100) / 100
+        )
+    return result
+
+
+STARFIELD_MULTIPLIERS = _starfield_multipliers()
+
+
+def _starfield_public() -> dict:
+    return {
+        "cells": STARFIELD_CELLS,
+        "mines": STARFIELD_MINES,
+        "stars": STARFIELD_CELLS - STARFIELD_MINES,
+        "return_percent": int(STARFIELD_RETURN * 100),
+        "max_multiplier": STARFIELD_MAX_MULT,
+        "multipliers": [STARFIELD_MULTIPLIERS[i] for i in sorted(STARFIELD_MULTIPLIERS)],
+        "bets": [
+            {
+                "stars": stars,
+                "usd": round(stars * STAR_USD, 6),
+                "max_win_stars": round(stars * STARFIELD_MAX_MULT, 2),
+            }
+            for stars in STARFIELD_BETS
+        ],
+        "star_usd": STAR_USD,
+    }
+
+
+def _starfield_round_code(round_id: str, bet_stars: float, multiplier: float, nonce: str) -> str:
+    key = hmac.new(
+        core.BOT_TOKEN.encode("utf-8"), b"miniapp-starfield-round", hashlib.sha256
+    ).digest()
+    message = f"{round_id}:{bet_stars}:{multiplier}:{nonce}".encode("utf-8")
+    return hmac.new(key, message, hashlib.sha256).hexdigest()[:16].upper()
+
+
+async def _ensure_starfield_schema() -> None:
+    async with aiosqlite.connect("bot_database.db") as db:
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS miniapp_starfield_rounds (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                round_id TEXT NOT NULL UNIQUE,
+                bet_usd REAL NOT NULL,
+                bet_stars REAL NOT NULL,
+                mines TEXT NOT NULL,
+                opened TEXT NOT NULL DEFAULT '[]',
+                status TEXT NOT NULL DEFAULT 'active',
+                multiplier REAL NOT NULL DEFAULT 1.0,
+                payout_usd REAL NOT NULL DEFAULT 0,
+                payout_stars REAL NOT NULL DEFAULT 0,
+                code TEXT NOT NULL,
+                nonce TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        await db.commit()
+
+
+def _starfield_state(row) -> dict:
+    if not row:
+        return None
+    return {
+        "round_id": row["round_id"],
+        "bet_stars": row["bet_stars"],
+        "cells": STARFIELD_CELLS,
+        "mines_count": STARFIELD_MINES,
+        "opened": json.loads(row["opened"] or "[]"),
+        "multiplier": row["multiplier"],
+        "status": row["status"],
+        "can_cashout": row["status"] == "active",
+        "code": row["code"],
+    }
+
+
+async def _starfield_active(db, user_id: int):
+    async with db.execute(
+        "SELECT * FROM miniapp_starfield_rounds "
+        "WHERE user_id=? AND status='active' ORDER BY id DESC LIMIT 1",
+        (user_id,),
+    ) as cursor:
+        return await cursor.fetchone()
+
+
+async def miniapp_starfield(request: web.Request) -> web.Response:
+    user_id = await _identity(request)
+    await _ensure_starfield_schema()
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        active = _starfield_state(await _starfield_active(db, user_id))
+    return web.json_response({**_starfield_public(), "active": active})
+
+
+async def miniapp_starfield_start(request: web.Request) -> web.Response:
+    user_id = await _identity(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Некорректный запрос"}, status=400)
+
+    try:
+        bet_stars = float(payload.get("bet_stars") or 0)
+    except (TypeError, ValueError):
+        bet_stars = 0.0
+    if bet_stars not in STARFIELD_BETS:
+        return web.json_response(
+            {"ok": False, "error": "Выберите ставку 1.25, 2.5 или 5 ⭐"}, status=400
+        )
+
+    await _ensure_starfield_schema()
+    bet_usd = round(bet_stars * STAR_USD, 6)
+    user = await get_user(user_id)
+    if not user or float(user.get("balance", 0) or 0) + 1e-9 < bet_usd:
+        return web.json_response(
+            {
+                "ok": False,
+                "error": f"Не хватает {bet_stars} ⭐ на ставку",
+                "need_stars": bet_stars,
+            },
+            status=400,
+        )
+
+    round_id = uuid.uuid4().hex
+    nonce = secrets.token_hex(8)
+    code = _starfield_round_code(round_id, bet_stars, 1.0, nonce)
+    mines = sorted(secrets.SystemRandom().sample(range(STARFIELD_CELLS), STARFIELD_MINES))
+
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        cursor = await db.execute(
+            "UPDATE users SET balance = balance - ? WHERE user_id = ? AND balance >= ?",
+            (bet_usd, user_id, bet_usd),
+        )
+        if cursor.rowcount != 1:
+            await db.rollback()
+            return web.json_response({"ok": False, "error": "Недостаточно средств"}, status=400)
+        await db.execute(
+            "INSERT INTO miniapp_starfield_rounds "
+            "(user_id, round_id, bet_usd, bet_stars, mines, opened, status, multiplier, code, nonce) "
+            "VALUES (?, ?, ?, ?, ?, '[]', 'active', 1.0, ?, ?)",
+            (user_id, round_id, bet_usd, bet_stars, json.dumps(mines), code, nonce),
+        )
+        await db.execute(
+            "INSERT INTO balance_history (user_id, amount, type, reason) VALUES (?, ?, ?, ?)",
+            (user_id, -bet_usd, "starfield", f"Звёздное поле · ставка {bet_stars} ⭐"),
+        )
+        await db.commit()
+        state = _starfield_state(await _starfield_active(db, user_id))
+
+    balance_row = await get_user(user_id)
+    balance = float(balance_row.get("balance", 0) or 0) if balance_row else 0
+    return web.json_response(
+        {
+            "ok": True,
+            **state,
+            "message": f"Ставка {bet_stars} ⭐ принята. Открывай клетки и забирай, когда захочешь.",
+            "balance_usd": round(balance, 6),
+            "balance_stars": round(balance / STAR_USD, 2),
+        }
+    )
+
+
+async def miniapp_starfield_open(request: web.Request) -> web.Response:
+    user_id = await _identity(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Некорректный запрос"}, status=400)
+
+    round_id = str(payload.get("round_id") or "")
+    try:
+        index = int(payload.get("index"))
+    except (TypeError, ValueError):
+        index = -1
+    if not round_id or not 0 <= index < STARFIELD_CELLS:
+        return web.json_response({"ok": False, "error": "Некорректная клетка"}, status=400)
+
+    await _ensure_starfield_schema()
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT * FROM miniapp_starfield_rounds WHERE round_id=? AND user_id=? AND status='active'",
+            (round_id, user_id),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            await db.rollback()
+            return web.json_response({"ok": False, "error": "Раунд не найден или завершён"}, status=404)
+
+        opened = json.loads(row["opened"] or "[]")
+        if index in opened:
+            await db.rollback()
+            return web.json_response({"ok": False, "error": "Клетка уже открыта"}, status=400)
+        opened.append(index)
+        mines = set(json.loads(row["mines"] or "[]"))
+        hit_mine = index in mines
+        stars_opened = len(opened)
+        multiplier = row["multiplier"] if hit_mine else STARFIELD_MULTIPLIERS.get(
+            stars_opened, STARFIELD_MAX_MULT
+        )
+        status = "lost" if hit_mine else "active"
+        code = _starfield_round_code(
+            round_id, row["bet_stars"], 0.0 if hit_mine else multiplier, row["nonce"]
+        )
+        await db.execute(
+            "UPDATE miniapp_starfield_rounds SET opened=?, status=?, multiplier=?, code=? WHERE id=?",
+            (json.dumps(opened), status, multiplier, code, row["id"]),
+        )
+        await db.commit()
+
+    if hit_mine:
+        message = f"Чёрная дыра. Ставка сгорела. Код раунда {code}"
+    else:
+        message = f"Звезда найдена · x{multiplier}. Код раунда {code}"
+    return web.json_response(
+        {
+            "ok": True,
+            "round_id": round_id,
+            "index": index,
+            "hit": "mine" if hit_mine else "star",
+            "opened": opened,
+            "opened_count": stars_opened,
+            "multiplier": multiplier,
+            "can_cashout": not hit_mine,
+            "game_over": hit_mine,
+            "code": code,
+            "message": message,
+        }
+    )
+
+
+async def miniapp_starfield_cashout(request: web.Request) -> web.Response:
+    user_id = await _identity(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Некорректный запрос"}, status=400)
+    round_id = str(payload.get("round_id") or "")
+    if not round_id:
+        return web.json_response({"ok": False, "error": "Раунд не найден"}, status=400)
+
+    await _ensure_starfield_schema()
+    async with aiosqlite.connect("bot_database.db") as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT * FROM miniapp_starfield_rounds WHERE round_id=? AND user_id=? AND status='active'",
+            (round_id, user_id),
+        ) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            await db.rollback()
+            return web.json_response({"ok": False, "error": "Раунд уже завершён"}, status=404)
+
+        multiplier = float(row["multiplier"] or 1.0)
+        payout_stars = round(float(row["bet_stars"]) * multiplier, 4)
+        payout_usd = round(payout_stars * STAR_USD, 6)
+        code = _starfield_round_code(round_id, row["bet_stars"], multiplier, row["nonce"])
+        await db.execute(
+            "UPDATE miniapp_starfield_rounds SET status='cashed', payout_usd=?, payout_stars=?, code=? WHERE id=?",
+            (payout_usd, payout_stars, code, row["id"]),
+        )
+        if payout_usd > 0:
+            await db.execute(
+                "UPDATE users SET balance = balance + ?, "
+                "lifetime_earned = COALESCE(lifetime_earned, 0) + ? WHERE user_id = ?",
+                (payout_usd, payout_usd, user_id),
+            )
+            await db.execute(
+                "INSERT INTO balance_history (user_id, amount, type, reason) VALUES (?, ?, ?, ?)",
+                (user_id, payout_usd, "starfield", f"Звёздное поле · x{multiplier} · код {code}"),
+            )
+        await db.commit()
+
+    balance_row = await get_user(user_id)
+    balance = float(balance_row.get("balance", 0) or 0) if balance_row else 0
+    return web.json_response(
+        {
+            "ok": True,
+            "multiplier": multiplier,
+            "payout_stars": payout_stars,
+            "payout_usd": payout_usd,
+            "code": code,
+            "balance_usd": round(balance, 6),
+            "balance_stars": round(balance / STAR_USD, 2),
+            "message": f"Забрано {payout_stars} ⭐ · код раунда {code}",
+        }
+    )
+
+
 async def miniapp_history(request: web.Request) -> web.Response:
     user_id = await _identity(request)
     items = []
@@ -747,6 +1057,33 @@ async def miniapp_history(request: web.Request) -> web.Response:
                                 float(row["bet_stars"] or 0) * STAR_USD, 6
                             ),
                             f"ставка {row['bet_stars']} ⭐",
+                            row["created_at"],
+                        ))
+            except Exception:
+                pass
+
+            try:
+                async with db.execute(
+                    "SELECT bet_stars, multiplier, payout_usd, payout_stars, status, code, created_at "
+                    "FROM miniapp_starfield_rounds WHERE user_id=? ORDER BY id DESC LIMIT 20",
+                    (user_id,),
+                ) as cursor:
+                    for row in await cursor.fetchall():
+                        if row["status"] == "lost":
+                            amount = -round(float(row["bet_stars"] or 0) * STAR_USD, 6)
+                            status = "сгорело"
+                        elif row["status"] == "cashed":
+                            amount = row["payout_usd"]
+                            status = f"выигрыш {row['payout_stars']} ⭐"
+                        else:
+                            amount = -round(float(row["bet_stars"] or 0) * STAR_USD, 6)
+                            status = "в игре"
+                        items.append(_history_item(
+                            f"starfield_{row['code']}",
+                            f"Звёздное поле · x{row['multiplier']}",
+                            _history_date(row["created_at"]) + " · код " + row["code"],
+                            amount,
+                            status,
                             row["created_at"],
                         ))
             except Exception:
@@ -931,3 +1268,7 @@ def register_routes(app: web.Application) -> None:
     app.router.add_post("/miniapi/cases/open", miniapp_case_open)
     app.router.add_get("/miniapi/roulette", miniapp_roulette)
     app.router.add_post("/miniapi/roulette/spin", miniapp_roulette_spin)
+    app.router.add_get("/miniapi/starfield", miniapp_starfield)
+    app.router.add_post("/miniapi/starfield/start", miniapp_starfield_start)
+    app.router.add_post("/miniapi/starfield/open", miniapp_starfield_open)
+    app.router.add_post("/miniapi/starfield/cashout", miniapp_starfield_cashout)
