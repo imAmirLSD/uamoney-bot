@@ -148,6 +148,16 @@ function renderTasks(data) {
 
   const total = (data.tasks || []).length;
   setText("tasks-count", total ? String(total) : "0");
+
+  const homeList = $("home-tasks-list");
+  if (homeList) {
+    homeList.innerHTML = "";
+    (data.tasks || []).slice(0, 5).forEach(task => homeList.appendChild(taskNode(task)));
+  }
+  setText("home-tasks-count", total ? String(total) : "0");
+  const completed = (profile && profile.user && profile.user.completed) || 0;
+  setText("home-tasks-progress", "Сделано " + completed + " из 15 · новые через 3 ч");
+
   if ((data.warnings || []).length) {
     setText("tasks-warning", "Некоторые сервисы временно недоступны: " + data.warnings.join("; "));
   }
@@ -801,6 +811,10 @@ const casesBack = $("cases-back");
 if (casesBack) casesBack.addEventListener("click", closeCasesScreen);
 const detailBack = $("detail-back");
 if (detailBack) detailBack.addEventListener("click", openCasesScreen);
+const homeTasksMore = $("home-tasks-more");
+if (homeTasksMore) homeTasksMore.addEventListener("click", () => switchTab("tasks"));
+const homeFriends = $("home-friends-invite");
+if (homeFriends) homeFriends.addEventListener("click", () => switchTab("profile"));
 
 document.querySelectorAll(".seg").forEach(el => {
   el.addEventListener("click", () => {
