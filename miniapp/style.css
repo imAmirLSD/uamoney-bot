@@ -466,7 +466,7 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   background: linear-gradient(180deg, var(--c3), var(--c1));
   border: 2px solid rgba(255,255,255,.55);
   box-shadow: 0 6px 12px rgba(0,0,0,.35);
-  transform-origin: 12% 90%;
+  transform-origin: 50% 100%;
   transition: transform .9s cubic-bezier(.2,.9,.2,1.15);
   z-index: 2;
 }
@@ -483,9 +483,14 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   border: 2px solid rgba(0,0,0,.25);
   box-shadow: 0 0 10px rgba(253,224,71,.7);
   z-index: 3;
+  transition: opacity .3s ease;
 }
 
-.case-opening .cv-lid { transform: rotate(-115deg) translate(-8%, -10%); }
+.case-opening .cv-lid {
+  transform: translateY(-58%) rotate(-6deg);
+  box-shadow: 0 -6px 16px rgba(0,0,0,.35);
+}
+.case-opening .cv-lock { opacity: 0; }
 .case-opening .cv-body { animation: chestShake .7s ease-in-out 3; }
 
 @keyframes chestShake {
@@ -535,10 +540,7 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* Усиленная анимация открытия */
-.opening-stage { perspective: 800px; }
-#opening-visual { transform-style: preserve-3d; }
-
+/* Искры при открытии */
 .cv-spark {
   position: absolute;
   left: 50%;
@@ -562,12 +564,7 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1.2); }
 }
 
-.case-opening .cv-lid {
-  transform: rotateX(-125deg) translate(-8%, -14%);
-  box-shadow: 0 -10px 30px rgba(253, 224, 71, .45);
-}
-
-.case-opening .cv-body { filter: brightness(1.35); }
+.case-opening .cv-body { filter: brightness(1.25); }
 
 .opening-prize { animation: prizeDrop .9s cubic-bezier(.2,.8,.25,1.25), prizeGlow 1.6s ease-in-out infinite alternate; }
 

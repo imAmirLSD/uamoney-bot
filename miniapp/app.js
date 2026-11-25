@@ -520,7 +520,11 @@ function startPrizeReel(prizes, finalStars, onDone) {
   }, 30);
   setTimeout(() => {
     win.classList.add("finish");
-    onDone();
+    setTimeout(() => {
+      win.classList.add("hidden");
+      win.classList.remove("finish");
+      onDone();
+    }, 420);
   }, 3200);
 }
 
