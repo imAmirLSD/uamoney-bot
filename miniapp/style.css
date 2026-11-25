@@ -560,3 +560,81 @@ body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   from { transform: scale(.3) translateY(16px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
+
+/* Усиленная анимация открытия */
+.opening-stage { perspective: 800px; }
+#opening-visual { transform-style: preserve-3d; }
+
+.cv-rays {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 260%;
+  height: 260%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(253, 224, 71, 0) 0deg,
+    rgba(253, 224, 71, .38) 22deg,
+    rgba(253, 224, 71, 0) 44deg,
+    rgba(167, 139, 250, 0) 90deg,
+    rgba(167, 139, 250, .35) 112deg,
+    rgba(167, 139, 250, 0) 134deg,
+    rgba(253, 224, 71, 0) 180deg,
+    rgba(253, 224, 71, .38) 202deg,
+    rgba(253, 224, 71, 0) 224deg,
+    rgba(167, 139, 250, 0) 270deg,
+    rgba(167, 139, 250, .35) 292deg,
+    rgba(167, 139, 250, 0) 314deg,
+    rgba(253, 224, 71, 0) 360deg
+  );
+  opacity: 0;
+  transition: opacity .25s ease;
+  animation: raySpin 3.5s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.case-opening .cv-rays { opacity: 1; }
+
+@keyframes raySpin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.cv-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: #fde047;
+  box-shadow: 0 0 10px #fde047;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.case-opening .cv-spark { animation: sparkFly 1s ease-out forwards; }
+
+@keyframes sparkFly {
+  0% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1.2); }
+}
+
+.case-opening .cv-lid {
+  transform: rotateX(-125deg) translate(-8%, -14%);
+  box-shadow: 0 -10px 30px rgba(253, 224, 71, .45);
+}
+
+.case-opening .cv-body { filter: brightness(1.35); }
+
+.opening-prize { animation: prizePop .5s cubic-bezier(.2,.9,.3,1.5), prizeGlow 1.2s ease-in-out infinite alternate; }
+
+@keyframes prizeGlow {
+  from { text-shadow: 0 0 12px rgba(253,224,71,.45); }
+  to { text-shadow: 0 0 32px rgba(253,224,71,.95); }
+}

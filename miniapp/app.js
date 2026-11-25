@@ -267,6 +267,8 @@ function makeCaseVisual(caseId, size) {
 
   const glow = document.createElement("div");
   glow.className = "cv-glow";
+  const rays = document.createElement("div");
+  rays.className = "cv-rays";
   const body = document.createElement("div");
   body.className = "cv-body";
   const lid = document.createElement("div");
@@ -275,9 +277,21 @@ function makeCaseVisual(caseId, size) {
   lock.className = "cv-lock";
 
   wrap.appendChild(glow);
+  wrap.appendChild(rays);
   wrap.appendChild(body);
   wrap.appendChild(lid);
   wrap.appendChild(lock);
+
+  for (let i = 0; i < 12; i++) {
+    const spark = document.createElement("div");
+    spark.className = "cv-spark";
+    const angle = (Math.PI * 2 * i) / 12;
+    const distance = 55 + Math.random() * 45;
+    spark.style.setProperty("--sx", Math.cos(angle) * distance + "px");
+    spark.style.setProperty("--sy", Math.sin(angle) * distance + "px");
+    spark.style.animationDelay = (Math.random() * 0.25).toFixed(2) + "s";
+    wrap.appendChild(spark);
+  }
   return wrap;
 }
 
