@@ -76,6 +76,7 @@ function updateSeasonUI() {
   setText("home-level", String(s.level));
   setText("home-season-name", s.username + " · сезон 1");
   setText("season-level", "Уровень " + s.level);
+  setText("pass-level-num", String(s.level));
   setText("season-today", "Сегодня " + Math.min(s.completedToday, s.goal) + " из " + s.goal);
   setText("season-exp", "до " + levelWord + " — " + s.need + " опыта");
   const homeFill = $("home-progress");
@@ -1215,7 +1216,7 @@ if (homeTasksMore) homeTasksMore.addEventListener("click", () => switchTab("task
 const homeFriends = $("home-friends-invite");
 if (homeFriends) homeFriends.addEventListener("click", () => switchTab("profile"));
 
-["season-level", "home-level", "header-level"].forEach(id => {
+["home-season-art", "season-level", "home-level", "header-level"].forEach(id => {
   const el = $(id);
   if (el) el.addEventListener("click", openLevels);
 });
